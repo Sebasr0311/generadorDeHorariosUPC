@@ -2,7 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 const repository = process.env.GITHUB_REPOSITORY?.split('/');
 const basePath = process.env.VITE_BASE_PATH || (repository && repository[1] !== `${repository[0]}.github.io` ? `/${repository[1]}/` : '/');
-const previewURL = `http://127.0.0.1:4173${basePath}`;
+const liveURL = process.env.PLAYWRIGHT_LIVE_URL;
+const previewURL = liveURL || `http://127.0.0.1:4173${basePath}`;
 
 export default defineConfig({
   testDir: './tests',
@@ -21,7 +22,7 @@ export default defineConfig({
     { name: 'tablet', use: { ...devices['iPad Mini'], browserName: 'chromium', viewport: { width: 768, height: 1024 } } },
     { name: 'mobile', use: { ...devices['iPhone 13'], browserName: 'chromium', viewport: { width: 390, height: 844 } } },
   ],
-  webServer: {
+  webServer: liveURL ? undefined : {
     command: 'npm run preview -- --host 127.0.0.1 --port 4173',
     url: previewURL,
     reuseExistingServer: !process.env.CI,

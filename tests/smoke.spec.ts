@@ -52,6 +52,14 @@ test('selección y generación de horario desde catálogo de ejemplo', async ({ 
     await expect(groupButtons.first()).toContainText(/Grupo\s+/);
     await expect(groupButtons.first()).toContainText(/\d{2}:\d{2}–\d{2}:\d{2}/);
   }
+
+  // Verificar validación de no cruce entre materias al elegir grupo:
+  await page.getByRole('button', { name: /INVESTIGACION DE OPERACIONES/i }).first().click();
+  await page.getByRole('button', { name: /MECANICA/i }).first().click();
+  await page.getByLabel(/Grupo para INVESTIGACION DE OPERACIONES/i).selectOption('AI432::01-CAMPUS');
+  const mecanicaConflictOpt = page.getByLabel(/Grupo para MECANICA/i).locator('option[value="FS202::06-CAMPUS"]');
+  await expect(mecanicaConflictOpt).toHaveAttribute('disabled', '');
+  await expect(mecanicaConflictOpt).toContainText(/Cruza con INVESTIGACION DE OPERACIONES/i);
   await page.getByRole('button', { name: /guardar/i }).first().click();
   await page.getByRole('tab', { name: /guardados/i }).click();
   await expect(page.getByText(/mi horario 2026-2/i).first()).toBeVisible();

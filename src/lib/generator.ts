@@ -1,10 +1,30 @@
-import { Catalog, Choice, Group, Preferences, Schedule, Session, Subject, normalizeGroup } from './types';
+import { Catalog, Choice, DAY_NAMES, Group, Preferences, SHORT_DAYS, Schedule, Session, Subject, formatHour, normalizeGroup } from './types';
 
 export function overlap(a:Session,b:Session):boolean {
   return a.day===b.day && a.start<b.end && b.start<a.end;
 }
+export function findSessionOverlap(a:Group,b:Group):{day:Session['day'];start:number;end:number}|null {
+  for(const sa of a.sessions){
+    for(const sb of b.sessions){
+      if(overlap(sa,sb)){
+        return {day:sa.day,start:Math.max(sa.start,sb.start),end:Math.min(sa.end,sb.end)};
+      }
+    }
+  }
+  return null;
+}
 export function conflicting(group:Group,existing:Group[]):boolean {
   return group.sessions.some(session=>existing.some(g=>g.sessions.some(other=>overlap(session,other))));
+}
+export function hasScheduleConflict(schedule:Pick<Schedule,'groups'>):boolean {
+  for(let i=0;i<schedule.groups.length;i++){
+    const g1=schedule.groups[i].group;
+    if(g1.sessions.some((s,idx)=>g1.sessions.slice(idx+1).some(other=>overlap(s,other))))return true;
+    for(let j=i+1;j<schedule.groups.length;j++){
+      if(conflicting(g1,[schedule.groups[j].group]))return true;
+    }
+  }
+  return false;
 }
 export function groupOptions(subject:Subject,choice:Choice,prefs:Preferences):Group[]{
   return subject.groups.filter(group=>{
@@ -71,5 +91,59 @@ export function generateSchedules(catalog:Catalog,choices:Choice[],prefs:Prefere
     }
   }
   explore(0);
-  return {schedules:results.sort((a,b)=>a.score-b.score||a.key.localeCompare(b.key)),visited,truncated,infeasible:false,problemSubjects};
+  return {schedules:results.filter(s=>!hasScheduleConflict(s)).sort((a,b)=>a.score-b.score||a.key.localeCompare(b.key)),visited,truncated,infeasible:false,problemSubjects};
+}
+
+export function groupConflictReason(subjectCode:string,candidateGroup:Group,catalog:Catalog,choices:Choice[],prefs:Preferences):string|null {
+  for(const otherChoice of choices){
+    if(otherChoice.code===subjectCode)continue;
+    const otherSubject=catalog.subjects.find(s=>s.code===otherChoice.code);
+    if(!otherSubject)continue;
+    if(otherChoice.pinnedGroup){
+      const pinned=otherSubject.groups.find(g=>g.id===otherChoice.pinnedGroup);
+      if(pinned){
+        const clash=findSessionOverlap(candidateGroup,pinned);
+        if(clash){
+          return `Cruza con ${otherSubject.name} (Grupo ${pinned.label} · ${SHORT_DAYS[clash.day]} ${formatHour(clash.start)}–${formatHour(clash.end)})`;
+        }
+      }
+    }
+    const otherValid=groupOptions(otherSubject,otherChoice,prefs);
+    if(otherValid.length>0 && otherValid.every(og=>conflicting(candidateGroup,[og]))){
+      const clash=findSessionOverlap(candidateGroup,otherValid[0]);
+      return clash
+        ? `Cruza con ${otherSubject.name} (${SHORT_DAYS[clash.day]} ${formatHour(clash.start)}–${formatHour(clash.end)})`
+        : `Cruza con todos los grupos disponibles de ${otherSubject.name}`;
+    }
+  }
+  if(choices.length>1){
+    const testChoices=choices.map(c=>c.code===subjectCode?{...c,pinnedGroup:candidateGroup.id}:c);
+    const check=generateSchedules(catalog,testChoices,prefs,{limit:1,maxVisited:15_000});
+    if(!check.infeasible && check.schedules.length===0){
+      return 'Cruza con la combinación actual de materias seleccionadas';
+    }
+  }
+  return null;
+}
+
+export function describeConflicts(catalog:Catalog,choices:Choice[],prefs:Preferences):string[] {
+  const details:string[]=[];
+  const mapped=choices.map(choice=>({subject:catalog.subjects.find(s=>s.code===choice.code),choice})).filter((x):x is {subject:Subject;choice:Choice}=>Boolean(x.subject));
+  for(let i=0;i<mapped.length;i++){
+    const a=mapped[i];
+    const groupsA=groupOptions(a.subject,a.choice,prefs);
+    if(!groupsA.length)continue;
+    for(let j=i+1;j<mapped.length;j++){
+      const b=mapped[j];
+      const groupsB=groupOptions(b.subject,b.choice,prefs);
+      if(!groupsB.length)continue;
+      const hasCompatiblePair=groupsA.some(ga=>groupsB.some(gb=>!conflicting(ga,[gb])));
+      if(!hasCompatiblePair){
+        const clash=findSessionOverlap(groupsA[0],groupsB[0]);
+        const when=clash?` el ${DAY_NAMES[clash.day]} de ${formatHour(clash.start)} a ${formatHour(clash.end)}`:'';
+        details.push(`${a.subject.name} (${groupsA.length===1?`Grupo ${groupsA[0].label}`:`${groupsA.length} grupos`}) se cruza con ${b.subject.name} (${groupsB.length===1?`Grupo ${groupsB[0].label}`:`${groupsB.length} grupos`})${when}.`);
+      }
+    }
+  }
+  return details;
 }

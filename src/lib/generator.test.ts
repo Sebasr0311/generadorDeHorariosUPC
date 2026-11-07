@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { conflicting, generateSchedules, overlap } from './generator';
+import { conflicting, describeConflicts, generateSchedules, groupConflictReason, hasScheduleConflict, overlap } from './generator';
 import type { Catalog, Group, Session } from './types';
 import {DEFAULT_PREFERENCES} from './types';
 const s=(day:number,start:number,end:number):Session=>({day:day as Session['day'],start,end,room:'101'});
@@ -37,5 +37,15 @@ describe('integridad del origen',()=>{
     const result=generateSchedules(damaged,[{code:'A'}],DEFAULT_PREFERENCES);
     expect(result.infeasible).toBe(true);
     expect(result.problemSubjects).toEqual(['A']);
+  });
+  it('identifica y bloquea grupos en cruce con otras materias seleccionadas',()=>{
+    const reason=groupConflictReason('B',catalog.subjects[1].groups[0],catalog,[{code:'A',pinnedGroup:'A::01-CAMPUS'},{code:'B'}],DEFAULT_PREFERENCES);
+    expect(reason).toContain('Cruza con A');
+    const okReason=groupConflictReason('B',catalog.subjects[1].groups[1],catalog,[{code:'A',pinnedGroup:'A::01-CAMPUS'},{code:'B'}],DEFAULT_PREFERENCES);
+    expect(okReason).toBeNull();
+    const conflicts=describeConflicts(catalog,[{code:'A',pinnedGroup:'A::01-CAMPUS'},{code:'B',pinnedGroup:'A::01-CAMPUS'}],DEFAULT_PREFERENCES);
+    expect(conflicts.length).toBeGreaterThan(0);
+    const validPlan=generateSchedules(catalog,[{code:'A'},{code:'B'}],DEFAULT_PREFERENCES).schedules[0];
+    expect(hasScheduleConflict(validPlan)).toBe(false);
   });
 });

@@ -2073,6 +2073,36 @@ button:disabled,
   color: #1e293b;
 }
 
+.group-option-btn:disabled,
+.group-option-btn.conflict {
+  opacity: 1;
+  background: #fff1f2;
+  border-color: #fda4af;
+  color: #881337;
+}
+
+.group-option-btn:disabled:hover,
+.group-option-btn.conflict:hover {
+  background: #fff1f2;
+  border-color: #fda4af;
+}
+
+.group-option-btn.conflict strong {
+  color: #881337;
+}
+
+.group-option-btn.conflict small {
+  color: #9f1239;
+}
+
+.group-conflict-tag {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  color: #9f1239;
+  line-height: 1.35;
+}
+
 .pinned-group-summary {
   margin-top: 10px;
   padding: 9px 11px;

@@ -2,7 +2,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {ArrowLeft,ArrowRight,BookOpen,CalendarDays,Check,CheckCircle2,ChevronDown,ChevronLeft,ChevronRight,Clock3,CloudOff,Download,FileClock,FileDown,FileSpreadsheet,GitCompareArrows,Heart,Info,Layers3,ListFilter,Menu,MousePointerClick,Search,ShieldCheck,Sparkles,Users, X, Zap} from 'lucide-react';
 import type {Catalog,Choice,Group,Preferences,SavedPlan,Subject} from './lib/types';
 import {DAY_NAMES,DEFAULT_PREFERENCES,SHORT_DAYS,formatHour} from './lib/types';
-import {generateSchedules,groupOptions} from './lib/generator';
+import {describeConflicts,generateSchedules,groupConflictReason,groupOptions} from './lib/generator';
 import {loadCatalogs,loadPlans,saveCatalog,savePlan,deletePlan} from './lib/storage';
 import {exportExcel,exportHtml,exportJson,exportPdf} from './lib/exporters';
 import {ImportDialog} from './components/ImportDialog';
@@ -91,7 +91,7 @@ function HeroIllustration(){return <div className="hero-visual" aria-label="Vist
   </div>
 </div>;}
 const formatGroupSessions=(g:Group)=>g.sessions.length?g.sessions.map(s=>`${SHORT_DAYS[s.day]} ${formatHour(s.start)}–${formatHour(s.end)}`).join(', '):'Sin horario asignado';
-function TeacherControls({subject,choice,onChange,prefs}:{subject:Subject;choice:Choice;onChange:(choice:Choice)=>void;prefs:Preferences}){
+function TeacherControls({subject,choice,onChange,prefs,catalog,choices}:{subject:Subject;choice:Choice;onChange:(choice:Choice)=>void;prefs:Preferences;catalog:Catalog;choices:Choice[]}){
   const [showGroups,setShowGroups]=useState(false);
   const teachers=new Map<string,string>();for(const g of subject.groups)if(g.teacherId&&g.teacher)teachers.set(g.teacherId,g.teacher);
   const matching=groupOptions(subject,choice,prefs);
@@ -100,26 +100,39 @@ function TeacherControls({subject,choice,onChange,prefs}:{subject:Subject;choice
     if(choice.teacherId&&choice.teacherMode==='exclude'&&g.teacherId===choice.teacherId)return false;
     return true;
   });
+  const conflictMap=useMemo(()=>{
+    const map=new Map<string,string|null>();
+    for(const g of availableGroups){
+      map.set(g.id,groupConflictReason(subject.code,g,catalog,choices,prefs));
+    }
+    return map;
+  },[availableGroups,subject.code,catalog,choices,prefs]);
+  const compatibleCount=matching.filter(g=>!conflictMap.get(g.id)).length;
   const pinnedGroupObj=availableGroups.find(g=>g.id===choice.pinnedGroup);
+  const pinnedConflict=pinnedGroupObj?conflictMap.get(pinnedGroupObj.id):null;
   const renderGroupButton=(g:Group)=>{
     const teacherName=`${g.teacher||'Docente por confirmar'}${g.teacherSource==='estimated'?' (probable)':''}`;
     const isPinned=choice.pinnedGroup===g.id;
-    return <button key={g.id} type="button" className={'group-option-btn'+(isPinned?' active':'')} onClick={()=>onChange({...choice,pinnedGroup:isPinned?undefined:g.id})} aria-pressed={isPinned}>
+    const conflict=conflictMap.get(g.id);
+    return <button key={g.id} type="button" disabled={Boolean(conflict)&&!isPinned} className={'group-option-btn'+(isPinned?' active':'')+(conflict?' conflict':'')} onClick={()=>{if(conflict&&!isPinned)return;onChange({...choice,pinnedGroup:isPinned?undefined:g.id});}} aria-pressed={isPinned}>
       <strong>Grupo {g.label} · {teacherName}</strong>
       <small>{formatGroupSessions(g)}</small>
+      {conflict&&<span className="group-conflict-tag">⚠ {conflict}</span>}
     </button>;
   };
-  return <div className="choice-control"><div className="choice-control-top"><div><strong>{subject.name}</strong><small>{subject.code} · {subject.groups.length} grupos</small></div><span className="count-chip">{matching.length} opciones</span></div>
+  return <div className="choice-control"><div className="choice-control-top"><div><strong>{subject.name}</strong><small>{subject.code} · {subject.groups.length} grupos</small></div><span className="count-chip">{compatibleCount} opciones</span></div>
     <div className="choice-control-fields">
       <label>Preferencia de docente<select aria-label={`Profesor para ${subject.name}`} value={choice.teacherId||''} onChange={e=>onChange({...choice,teacherId:e.target.value||undefined,teacherMode:e.target.value?'only':'any',pinnedGroup:undefined})}><option value="">Cualquier docente</option>{[...teachers].sort((a,b)=>a[1].localeCompare(b[1])).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
       <label>Tipo de filtro<select aria-label={`Tipo de filtro docente para ${subject.name}`} value={choice.teacherMode||'any'} disabled={!choice.teacherId} onChange={e=>{const nextMode=e.target.value as Choice['teacherMode'];const stillValid=!choice.pinnedGroup||subject.groups.some(g=>g.id===choice.pinnedGroup&&!(choice.teacherId&&nextMode==='only'&&g.teacherId!==choice.teacherId)&&!(choice.teacherId&&nextMode==='exclude'&&g.teacherId===choice.teacherId));onChange({...choice,teacherMode:nextMode,pinnedGroup:stillValid?choice.pinnedGroup:undefined});}}><option value="any">Sin restricción</option><option value="only">Solo este profesor</option><option value="exclude">Excluir profesor</option></select></label>
-      <label className="full-field">Fijar grupo (opcional)<select aria-label={`Grupo para ${subject.name}`} value={choice.pinnedGroup||''} onChange={e=>onChange({...choice,pinnedGroup:e.target.value||undefined})}><option value="">Cualquier grupo compatible ({availableGroups.length})</option>{availableGroups.map(g=><option key={g.id} value={g.id}>Grupo {g.label} · {g.teacher||'Docente por confirmar'}{g.teacherSource==='estimated'?' (probable)':''} · {formatGroupSessions(g)}</option>)}</select></label>
+      <label className="full-field">Fijar grupo (opcional)<select aria-label={`Grupo para ${subject.name}`} value={choice.pinnedGroup||''} onChange={e=>{const nextId=e.target.value||undefined;if(nextId&&conflictMap.get(nextId))return;onChange({...choice,pinnedGroup:nextId});}}><option value="">Cualquier grupo compatible ({compatibleCount})</option>{availableGroups.map(g=>{const conflict=conflictMap.get(g.id);const isPinned=choice.pinnedGroup===g.id;return <option key={g.id} value={g.id} disabled={Boolean(conflict)&&!isPinned}>Grupo {g.label} · {g.teacher||'Docente por confirmar'}{g.teacherSource==='estimated'?' (probable)':''} · {formatGroupSessions(g)}{conflict?` · ⚠ ${conflict}`:''}</option>;})}</select></label>
     </div>
     {choice.teacherId&&choice.teacherMode==='only'?<div className="teacher-groups-list" role="group" aria-label={`Grupos del docente en ${subject.name}`}>{availableGroups.map(renderGroupButton)}</div>:<>
       {pinnedGroupObj&&<div className="pinned-group-summary"><strong>Grupo {pinnedGroupObj.label} · {pinnedGroupObj.teacher||'Docente por confirmar'}{pinnedGroupObj.teacherSource==='estimated'?' (probable)':''}</strong><small>{formatGroupSessions(pinnedGroupObj)}</small></div>}
       <div className="group-list-drawer"><button type="button" className={'group-drawer-toggle'+(showGroups?' open':'')} aria-expanded={showGroups} onClick={()=>setShowGroups(s=>!s)}><span>{showGroups?'Ocultar':'Ver'} grupos, docentes y horarios ({availableGroups.length})</span><ChevronDown size={15}/></button>{showGroups&&<div className="teacher-groups-list" role="group" aria-label={`Grupos disponibles en ${subject.name}`}>{availableGroups.map(renderGroupButton)}</div>}</div>
     </>}
+    {pinnedConflict&&<div className="tiny-alert"><strong>Cruce de horario:</strong> {pinnedConflict}. Libera o cambia este grupo para evitar el cruce.</div>}
     {!matching.length&&<div className="tiny-alert">Ningún grupo cumple estos filtros. Modifícalos para generar horarios.</div>}
+    {matching.length>0&&!compatibleCount&&!pinnedConflict&&<div className="tiny-alert">Todos los grupos disponibles se cruzan en horario con tus otras materias seleccionadas.</div>}
     {subject.groups.some(g=>g.teacherSource!=='confirmed')&&<p className="teacher-disclaimer"><Info size={13}/> Hay grupos con docentes estimados o por confirmar.</p>}
   </div>;
 }
@@ -141,6 +154,7 @@ function Planner({onHome}:{onHome:()=>void}){
   const selected=choices.map(x=>catalog.subjects.find(s=>s.code===x.code)).filter((s):s is Subject=>Boolean(s));
   const filteredSubjects=useMemo(()=>catalog.subjects.filter(s=>`${s.code} ${s.name} ${s.groups.map(g=>g.teacher||'').join(' ')}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(search.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''))),[catalog,search]);
   const computed=useMemo(()=>generateSchedules(catalog,choices,prefs,{limit:batchSize,maxVisited:Math.max(450_000,batchSize*250)}),[catalog,choices,prefs,batchSize]);
+  const conflictMessages=useMemo(()=>choices.length>1&&!computed.infeasible&&computed.schedules.length===0?describeConflicts(catalog,choices,prefs):[],[catalog,choices,prefs,computed.infeasible,computed.schedules.length]);
   const pageCount=Math.max(1,Math.ceil(computed.schedules.length/10));
   const displayed=computed.schedules.slice(page*10,page*10+10);
   const current=computed.schedules[page*10]||null;
@@ -173,7 +187,7 @@ function Planner({onHome}:{onHome:()=>void}){
         <div className="page-tabs" role="tablist" aria-label="Secciones del planificador"><button role="tab" aria-selected={tab==='courses'} className={tab==='courses'?'active':''} onClick={()=>setTab('courses')}><BookOpen size={16}/> Asignaturas <span>{choices.length}</span></button><button role="tab" aria-selected={tab==='filters'} className={tab==='filters'?'active':''} onClick={()=>setTab('filters')}><ListFilter size={16}/> Preferencias</button><button role="tab" aria-selected={tab==='saved'} className={tab==='saved'?'active':''} onClick={()=>setTab('saved')}><Heart size={16}/> Guardados <span>{saved.length}</span></button></div>
         {tab==='courses'&&<section className="panel control-panel"><div className="panel-heading"><div><h2>Materias elegidas</h2><p>Define qué profesores o grupos prefieres. Si no estableces filtros, incluiremos todas las opciones posibles.</p></div><div className="section-bubble"><Users size={17}/></div></div>
           {selected.length===0?<div className="selection-empty"><div className="selection-illustration"><BookOpen size={28}/></div><h3>Empieza seleccionando materias</h3><p>Escoge asignaturas desde la lista de la izquierda para personalizar tus clases.</p></div>:
-          <div className="choice-grid">{selected.map(s=><TeacherControls key={s.code} subject={s} choice={choices.find(x=>x.code===s.code)!} onChange={updateChoice} prefs={prefs}/>)}</div>}
+          <div className="choice-grid">{selected.map(s=><TeacherControls key={s.code} subject={s} choice={choices.find(x=>x.code===s.code)!} onChange={updateChoice} prefs={prefs} catalog={catalog} choices={choices}/>)}</div>}
           {selected.length>0&&<button className="inline-go" onClick={()=>setTab('filters')}>Personalizar preferencias de horario <ArrowRight size={16}/></button>}
         </section>}
         {tab==='filters'&&<section className="panel control-panel"><div className="panel-heading"><div><h2>Tu semana, tus reglas</h2><p>Las restricciones son obligatorias; la prioridad elegida solo ordena resultados válidos.</p></div><div className="section-bubble"><ListFilter size={17}/></div></div>
@@ -186,6 +200,7 @@ function Planner({onHome}:{onHome:()=>void}){
         </section>}
         <section className="panel results-panel"><div className="results-heading"><div><div className="eyebrow">EXPLORA TUS OPCIONES</div><h2>Combinaciones disponibles</h2><p>{choices.length===0?'Selecciona materias para explorar posibles horarios.':computed.infeasible?'No encontramos grupos que cumplan todas tus restricciones.':computed.schedules.length?`${computed.schedules.length} combinaciones encontradas${computed.truncated?' en esta búsqueda (hay más por explorar)':''}. Selecciona una para verla abajo en el calendario.`:'No existen combinaciones sin cruces con las reglas actuales.'}</p></div>{computed.schedules.length>0&&<span className="result-count"><CountUp to={computed.schedules.length} suffix={`${computed.truncated?'+':''} resultados`} duration={0.6} trigger="load"/></span>}</div>
           {computed.infeasible&&<p className="tiny-alert">Revisa las materias {computed.problemSubjects.join(', ')}. Ningún grupo satisface los filtros actuales.</p>}
+          {conflictMessages.length>0&&<div className="tiny-alert" role="alert"><strong>Cruce de horario detectado:</strong> {conflictMessages.join(' ')}</div>}
           <div className="result-list">{displayed.map((result,i)=>{const index=page*10+i;return <button className={'result-item'+(activeSchedule?.key===result.key?' active':'')} key={result.key} onClick={()=>{setSelectedResult(index);setShowDetail(false)}} aria-pressed={activeSchedule?.key===result.key}><span className="result-num">{String(index+1).padStart(2,'0')}</span><span className="result-info"><strong>Opción {index+1}</strong><small>{result.groups.length} materias · {result.days} días de clase · {Math.round(result.gaps/60*10)/10} h de huecos</small></span><span className="result-time"><Clock3 size={14}/>{formatHour(result.earliest)}–{formatHour(result.latest)}</span><ChevronRight size={18}/></button>})}</div>
           {computed.schedules.length>0&&<div className="results-footer"><div className="page-controls"><button disabled={page===0} onClick={()=>setPage(x=>Math.max(0,x-1))} aria-label="Página anterior"><ChevronLeft size={18}/></button><span>Página {page+1} de {pageCount}</span><button disabled={page>=pageCount-1} onClick={()=>setPage(x=>Math.min(pageCount-1,x+1))} aria-label="Página siguiente"><ChevronRight size={18}/></button></div>{computed.truncated&&<button className="btn-outline small" onClick={()=>setBatchSize(x=>Math.min(20000,x+1000))} disabled={batchSize>=20000}>Explorar más <ArrowRight size={15}/></button>}<button className="link-btn" onClick={()=>setShowDetail(x=>!x)}>{showDetail?'Ocultar':'Ver'} detalle del horario elegido <ChevronDown size={16}/></button></div>}
           {showDetail&&activeSchedule&&<div className="schedule-detail">{activeSchedule.groups.map(x=><div key={x.code}><div className="detail-name"><strong>{x.code} · {x.name}</strong><span className={'status '+badges[x.group.teacherSource]}>{sourceText(x.group.teacherSource)}</span></div><p>{x.group.label} · {x.group.teacher||'Docente por confirmar'} {x.group.inferredFrom&&`· Basado en ${x.group.inferredFrom}`}</p>{x.group.sessions.map((s,i)=><small key={i}>{DAY_NAMES[s.day]}, {formatHour(s.start)}–{formatHour(s.end)} · {s.room}</small>)}</div>)}</div>}

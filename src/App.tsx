@@ -1,11 +1,15 @@
 import {useEffect,useMemo,useState} from 'react';
 import {ArrowLeft,ArrowRight,BookOpen,CalendarDays,Check,CheckCircle2,ChevronDown,ChevronLeft,ChevronRight,Clock3,CloudOff,Download,FileClock,FileDown,FileSpreadsheet,GitCompareArrows,Heart,Info,Layers3,ListFilter,Menu,MousePointerClick,Search,ShieldCheck,Sparkles,Users, X, Zap} from 'lucide-react';
-import type {Catalog,Choice,Group,Preferences,SavedPlan,Subject} from './lib/types';
+import type {Catalog,Choice,Group,Preferences,ReconciledCatalogItem,SavedPlan,SemesterFilterValue,Subject} from './lib/types';
 import {DAY_NAMES,DEFAULT_PREFERENCES,SHORT_DAYS,formatHour} from './lib/types';
 import {describeConflicts,generateSchedules,groupConflictReason,groupOptions} from './lib/generator';
+import {computeSemesterCounts,filterReconciledItems,loadPersistedSemesterFilter,migrateChoicesForCatalog,persistSemesterFilter,reconcileCurriculumAndCatalog} from './lib/curriculum';
 import {loadCatalogs,loadPlans,saveCatalog,savePlan,deletePlan} from './lib/storage';
 import {exportExcel,exportHtml,exportJson,exportPdf} from './lib/exporters';
 import {ImportDialog} from './components/ImportDialog';
+import {SemesterFilter} from './components/SemesterFilter';
+import {SelectedSubjectsSummary} from './components/SelectedSubjectsSummary';
+import {SubjectCatalogList} from './components/SubjectCatalogList';
 import WeeklyCalendar from './components/WeeklyCalendar';
 import {ShinyText} from './components/ShinyText';
 import {SpotlightCard} from './components/SpotlightCard';
@@ -21,8 +25,8 @@ import sample from './data/catalogo-base.json';
 const initial=sample as Catalog;
 const subjectCount=(c:Catalog)=>c.subjects.length;
 const groupCount=(c:Catalog)=>c.subjects.reduce((n,s)=>n+s.groups.length,0);
-const sourceText=(source:string)=>source==='confirmed'?'Confirmado':source==='estimated'?'Probable':'Por confirmar';
-const badges:Record<string,string>={confirmed:'success',estimated:'estimated',unassigned:'unknown'};
+const sourceText=(source:string)=>source==='confirmed'?'Confirmado':source==='estimated'?'Probable':source==='possible'?'Posible':'Por confirmar';
+const badges:Record<string,string>={confirmed:'success',estimated:'estimated',possible:'estimated',unassigned:'unknown'};
 // Hero headline entrance: words resolve from a soft blur, no spring overshoot.
 const HERO_FROM={filter:'blur(10px)',opacity:0,y:14};
 const HERO_TO=[{filter:'blur(0px)',opacity:1,y:0}];
@@ -91,7 +95,7 @@ function HeroIllustration(){return <div className="hero-visual" aria-label="Vist
   </div>
 </div>;}
 const formatGroupSessions=(g:Group)=>g.sessions.length?g.sessions.map(s=>`${SHORT_DAYS[s.day]} ${formatHour(s.start)}–${formatHour(s.end)}`).join(', '):'Sin horario asignado';
-function TeacherControls({subject,choice,onChange,prefs,catalog,choices}:{subject:Subject;choice:Choice;onChange:(choice:Choice)=>void;prefs:Preferences;catalog:Catalog;choices:Choice[]}){
+function TeacherControls({subject,choice,onChange,prefs,catalog,choices,curriculumItem}:{subject:Subject;choice:Choice;onChange:(choice:Choice)=>void;prefs:Preferences;catalog:Catalog;choices:Choice[];curriculumItem?:ReconciledCatalogItem}){
   const [showGroups,setShowGroups]=useState(false);
   const teachers=new Map<string,string>();for(const g of subject.groups)if(g.teacherId&&g.teacher)teachers.set(g.teacherId,g.teacher);
   const matching=groupOptions(subject,choice,prefs);
@@ -111,7 +115,7 @@ function TeacherControls({subject,choice,onChange,prefs,catalog,choices}:{subjec
   const pinnedGroupObj=availableGroups.find(g=>g.id===choice.pinnedGroup);
   const pinnedConflict=pinnedGroupObj?conflictMap.get(pinnedGroupObj.id):null;
   const renderGroupButton=(g:Group)=>{
-    const teacherName=`${g.teacher||'Docente por confirmar'}${g.teacherSource==='estimated'?' (probable)':''}`;
+    const teacherName=`${g.teacher||'Docente por confirmar'}${g.teacherSource==='estimated'?' (probable)':g.teacherSource==='possible'?' (posible)':''}`;
     const isPinned=choice.pinnedGroup===g.id;
     const conflict=conflictMap.get(g.id);
     return <button key={g.id} type="button" disabled={Boolean(conflict)&&!isPinned} className={'group-option-btn'+(isPinned?' active':'')+(conflict?' conflict':'')} onClick={()=>{if(conflict&&!isPinned)return;onChange({...choice,pinnedGroup:isPinned?undefined:g.id});}} aria-pressed={isPinned}>
@@ -120,14 +124,17 @@ function TeacherControls({subject,choice,onChange,prefs,catalog,choices}:{subjec
       {conflict&&<span className="group-conflict-tag">⚠ {conflict}</span>}
     </button>;
   };
-  return <div className="choice-control"><div className="choice-control-top"><div><strong>{subject.name}</strong><small>{subject.code} · {subject.groups.length} grupos</small></div><span className="count-chip">{compatibleCount} opciones</span></div>
+  const codeLabel=curriculumItem&&curriculumItem.curriculumCode!==subject.code?`${curriculumItem.curriculumCode} (Horario: ${subject.code})`:subject.code;
+  const semPrefix=curriculumItem?.romanSemester?`Sem. ${curriculumItem.romanSemester} · `:'';
+  const creditsLabel=curriculumItem?.credits?` · ${curriculumItem.credits} cr.`:'';
+  return <div className="choice-control"><div className="choice-control-top"><div><strong>{subject.name}</strong><small>{semPrefix}{codeLabel}{creditsLabel} · {subject.groups.length} grupos</small></div><span className="count-chip">{compatibleCount} opciones</span></div>
     <div className="choice-control-fields">
       <label>Preferencia de docente<select aria-label={`Profesor para ${subject.name}`} value={choice.teacherId||''} onChange={e=>onChange({...choice,teacherId:e.target.value||undefined,teacherMode:e.target.value?'only':'any',pinnedGroup:undefined})}><option value="">Cualquier docente</option>{[...teachers].sort((a,b)=>a[1].localeCompare(b[1])).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
       <label>Tipo de filtro<select aria-label={`Tipo de filtro docente para ${subject.name}`} value={choice.teacherMode||'any'} disabled={!choice.teacherId} onChange={e=>{const nextMode=e.target.value as Choice['teacherMode'];const stillValid=!choice.pinnedGroup||subject.groups.some(g=>g.id===choice.pinnedGroup&&!(choice.teacherId&&nextMode==='only'&&g.teacherId!==choice.teacherId)&&!(choice.teacherId&&nextMode==='exclude'&&g.teacherId===choice.teacherId));onChange({...choice,teacherMode:nextMode,pinnedGroup:stillValid?choice.pinnedGroup:undefined});}}><option value="any">Sin restricción</option><option value="only">Solo este profesor</option><option value="exclude">Excluir profesor</option></select></label>
-      <label className="full-field">Fijar grupo (opcional)<select aria-label={`Grupo para ${subject.name}`} value={choice.pinnedGroup||''} onChange={e=>{const nextId=e.target.value||undefined;if(nextId&&conflictMap.get(nextId))return;onChange({...choice,pinnedGroup:nextId});}}><option value="">Cualquier grupo compatible ({compatibleCount})</option>{availableGroups.map(g=>{const conflict=conflictMap.get(g.id);const isPinned=choice.pinnedGroup===g.id;return <option key={g.id} value={g.id} disabled={Boolean(conflict)&&!isPinned}>Grupo {g.label} · {g.teacher||'Docente por confirmar'}{g.teacherSource==='estimated'?' (probable)':''} · {formatGroupSessions(g)}{conflict?` · ⚠ ${conflict}`:''}</option>;})}</select></label>
+      <label className="full-field">Fijar grupo (opcional)<select aria-label={`Grupo para ${subject.name}`} value={choice.pinnedGroup||''} onChange={e=>{const nextId=e.target.value||undefined;if(nextId&&conflictMap.get(nextId))return;onChange({...choice,pinnedGroup:nextId});}}><option value="">Cualquier grupo compatible ({compatibleCount})</option>{availableGroups.map(g=>{const conflict=conflictMap.get(g.id);const isPinned=choice.pinnedGroup===g.id;return <option key={g.id} value={g.id} disabled={Boolean(conflict)&&!isPinned}>Grupo {g.label} · {g.teacher||'Docente por confirmar'}{g.teacherSource==='estimated'?' (probable)':g.teacherSource==='possible'?' (posible)':''} · {formatGroupSessions(g)}{conflict?` · ⚠ ${conflict}`:''}</option>;})}</select></label>
     </div>
     {choice.teacherId&&choice.teacherMode==='only'?<div className="teacher-groups-list" role="group" aria-label={`Grupos del docente en ${subject.name}`}>{availableGroups.map(renderGroupButton)}</div>:<>
-      {pinnedGroupObj&&<div className="pinned-group-summary"><strong>Grupo {pinnedGroupObj.label} · {pinnedGroupObj.teacher||'Docente por confirmar'}{pinnedGroupObj.teacherSource==='estimated'?' (probable)':''}</strong><small>{formatGroupSessions(pinnedGroupObj)}</small></div>}
+      {pinnedGroupObj&&<div className="pinned-group-summary"><strong>Grupo {pinnedGroupObj.label} · {pinnedGroupObj.teacher||'Docente por confirmar'}{pinnedGroupObj.teacherSource==='estimated'?' (probable)':pinnedGroupObj.teacherSource==='possible'?' (posible)':''}</strong><small>{formatGroupSessions(pinnedGroupObj)}</small></div>}
       <div className="group-list-drawer"><button type="button" className={'group-drawer-toggle'+(showGroups?' open':'')} aria-expanded={showGroups} onClick={()=>setShowGroups(s=>!s)}><span>{showGroups?'Ocultar':'Ver'} grupos, docentes y horarios ({availableGroups.length})</span><ChevronDown size={15}/></button>{showGroups&&<div className="teacher-groups-list" role="group" aria-label={`Grupos disponibles en ${subject.name}`}>{availableGroups.map(renderGroupButton)}</div>}</div>
     </>}
     {pinnedConflict&&<div className="tiny-alert"><strong>Cruce de horario:</strong> {pinnedConflict}. Libera o cambia este grupo para evitar el cruce.</div>}
@@ -141,18 +148,24 @@ function Planner({onHome}:{onHome:()=>void}){
   const [activeId,setActiveId]=useState(initial.id);
   const [choices,setChoices]=useState<Choice[]>([]);
   const [prefs,setPrefs]=useState<Preferences>(DEFAULT_PREFERENCES);
+  const [semester,setSemester]=useState<SemesterFilterValue>(()=>loadPersistedSemesterFilter());
   const [search,setSearch]=useState('');
   const [page,setPage]=useState(0);
   const [batchSize,setBatchSize]=useState(800);
   const [saved,setSaved]=useState<SavedPlan[]>([]);
   const [tab,setTab]=useState<'courses'|'filters'|'saved'>('courses');
   const [showDetail,setShowDetail]=useState(false);
+  const [showReconcileReport,setShowReconcileReport]=useState(false);
   const [busyExport,setBusyExport]=useState<'pdf'|'excel'|null>(null);
   const [message,setMessage]=useState('');
   useEffect(()=>{let live=true;void Promise.all([loadCatalogs(),loadPlans()]).then(([stored,plans])=>{if(live){setCatalogs([initial,...stored.filter(c=>c.id!==initial.id)]);setSaved(plans);}}).catch(()=>{if(live)setMessage('No se pudo acceder al almacenamiento local; podrás seguir planificando en esta sesión.')});return()=>{live=false};},[]);
   const catalog=catalogs.find(c=>c.id===activeId)||initial;
+  const reconciled=useMemo(()=>reconcileCurriculumAndCatalog(catalog),[catalog]);
+  const semesterCounts=useMemo(()=>computeSemesterCounts(reconciled.items),[reconciled.items]);
+  const filteredItems=useMemo(()=>filterReconciledItems(reconciled.items,{semester,search}),[reconciled.items,semester,search]);
+  const selectedChoiceCodes=useMemo(()=>new Set(choices.map(c=>c.code)),[choices]);
+  const selectedReconciledItems=useMemo(()=>choices.map(c=>reconciled.byOfferingCode.get(c.code)||(c.curriculumCode?reconciled.byCurriculumCode.get(c.curriculumCode):undefined)).filter((x):x is ReconciledCatalogItem=>Boolean(x&&x.offering)),[choices,reconciled]);
   const selected=choices.map(x=>catalog.subjects.find(s=>s.code===x.code)).filter((s):s is Subject=>Boolean(s));
-  const filteredSubjects=useMemo(()=>catalog.subjects.filter(s=>`${s.code} ${s.name} ${s.groups.map(g=>g.teacher||'').join(' ')}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(search.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''))),[catalog,search]);
   const computed=useMemo(()=>generateSchedules(catalog,choices,prefs,{limit:batchSize,maxVisited:Math.max(450_000,batchSize*250)}),[catalog,choices,prefs,batchSize]);
   const conflictMessages=useMemo(()=>choices.length>1&&!computed.infeasible&&computed.schedules.length===0?describeConflicts(catalog,choices,prefs):[],[catalog,choices,prefs,computed.infeasible,computed.schedules.length]);
   const pageCount=Math.max(1,Math.ceil(computed.schedules.length/10));
@@ -163,11 +176,15 @@ function Planner({onHome}:{onHome:()=>void}){
   useEffect(()=>{setPage(0);setSelectedResult(0);setBatchSize(800);},[activeId,choices,prefs]);
   const activePlanChanges=saved.filter(p=>p.catalogId!==activeId).length;
   const unknownCount=catalog.subjects.reduce((n,s)=>n+s.groups.filter(g=>g.teacherSource!=='confirmed').length,0);
-  function toggle(code:string){setChoices(old=>old.some(x=>x.code===code)?old.filter(x=>x.code!==code):[...old,{code,teacherMode:'any'}]);}
+  const hasActiveFilters=semester!=='all'||search.trim().length>0;
+  function handleSemesterChange(next:SemesterFilterValue){setSemester(next);persistSemesterFilter(next);}
+  function clearCatalogFilters(){setSemester('all');setSearch('');persistSemesterFilter('all');}
+  function toggleItem(item:ReconciledCatalogItem){if(!item.offering||!item.choiceCode)return;const code=item.choiceCode;setChoices(old=>old.some(x=>x.code===code)?old.filter(x=>x.code!==code):[...old,{code,curriculumCode:item.kind==='curriculum'?item.curriculumCode:undefined,teacherMode:'any'}]);}
+  function removeChoice(code:string){setChoices(old=>old.filter(x=>x.code!==code));}
   function updateChoice(choice:Choice){setChoices(cs=>cs.map(c=>c.code===choice.code?choice:c));}
   function importCatalog(c:Catalog){setCatalogs(old=>[c,...old]);setActiveId(c.id);setChoices([]);setMessage(`Se cargó ${c.term}: ${subjectCount(c)} materias y ${groupCount(c)} grupos. Revisa las advertencias antes de matricular.`);void saveCatalog(c).catch(()=>setMessage('El catálogo se cargó, pero no pudo guardarse en este navegador.'));}
-  async function saveCurrent(){if(!activeSchedule)return;const name=`Mi horario ${catalog.term} · ${new Date().toLocaleDateString('es-CO')}`;const plan:SavedPlan={id:crypto.randomUUID(),name,catalogId:catalog.id,createdAt:Date.now(),items:activeSchedule.groups.map(x=>({code:x.code,groupId:x.group.id}))};setSaved(s=>[plan,...s]);try{await savePlan(plan);setMessage('Propuesta guardada en este navegador.');}catch{setMessage('No fue posible conservar el horario en el almacenamiento local.');}}
-  function loadSaved(plan:SavedPlan){const c=catalogs.find(x=>x.id===plan.catalogId);if(!c){setMessage('La versión del catálogo usada por este horario no está disponible.');return;}setActiveId(c.id);setChoices(plan.items.map(x=>({code:x.code,pinnedGroup:x.groupId})));setTab('courses');setMessage('Propuesta cargada. Verifica sus grupos y horarios antes de matricular.');}
+  async function saveCurrent(){if(!activeSchedule)return;const name=`Mi horario ${catalog.term} · ${new Date().toLocaleDateString('es-CO')}`;const plan:SavedPlan={id:crypto.randomUUID(),name,catalogId:catalog.id,createdAt:Date.now(),items:activeSchedule.groups.map(x=>{const recItem=reconciled.byOfferingCode.get(x.code);return {code:x.code,groupId:x.group.id,curriculumCode:recItem?.kind==='curriculum'?recItem.curriculumCode:undefined};})};setSaved(s=>[plan,...s]);try{await savePlan(plan);setMessage('Propuesta guardada en este navegador.');}catch{setMessage('No fue posible conservar el horario en el almacenamiento local.');}}
+  function loadSaved(plan:SavedPlan){const c=catalogs.find(x=>x.id===plan.catalogId);if(!c){setMessage('La versión del catálogo usada por este horario no está disponible.');return;}const rec=reconcileCurriculumAndCatalog(c);setActiveId(c.id);setChoices(migrateChoicesForCatalog(plan.items.map(x=>({code:x.code,curriculumCode:x.curriculumCode,pinnedGroup:x.groupId})),c,rec));setTab('courses');setMessage('Propuesta cargada. Verifica sus grupos y horarios antes de matricular.');}
   async function exportCurrent(kind:'pdf'|'excel'){if(!activeSchedule)return;setBusyExport(kind);try{if(kind==='pdf')await exportPdf(activeSchedule,catalog);else await exportExcel(activeSchedule,catalog);}catch(e){setMessage('No se pudo generar el archivo: '+(e instanceof Error?e.message:String(e)));}finally{setBusyExport(null);}}
   const unknownSelected=activeSchedule?.groups.filter(x=>x.group.teacherSource!=='confirmed').length||0;
   const reduceMotion=useReducedMotion();
@@ -176,9 +193,30 @@ function Planner({onHome}:{onHome:()=>void}){
     <div className="planner-body">
       <aside className="side-panel" aria-label="Materias disponibles">
         <div className="side-title"><div><div className="eyebrow">PASO 01</div><h2>Mis asignaturas</h2><p>Selecciona las que quieres cursar.</p></div><div className="selected-number">{choices.length}</div></div>
-        <label className="sidebar-search"><Search size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar materia o docente" aria-label="Buscar materia o docente"/><span>⌘ K</span></label>
-        <div className="catalog-card"><small>CATÁLOGO ACADÉMICO</small><select aria-label="Elegir catálogo" value={catalog.id} onChange={e=>{setActiveId(e.target.value);setChoices([])}}>{catalogs.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select><div><span>{subjectCount(catalog)} materias</span><span>·</span><span>{groupCount(catalog)} grupos</span></div></div>
-        <div className="subject-list"><div className="list-label">TODAS LAS MATERIAS <span>{filteredSubjects.length}</span></div>{filteredSubjects.map(subject=>{const checked=choices.some(c=>c.code===subject.code);return <button key={subject.code} className={'subject-row'+(checked?' selected':'')} onClick={()=>toggle(subject.code)} aria-pressed={checked}><span className={'checkbox-square'+(checked?' checked':'')}>{checked&&<Check size={13}/>}</span><span className="subject-text"><strong>{subject.name}</strong><small>{subject.code} · {subject.groups.length} grupos</small></span></button>;})}{filteredSubjects.length===0&&<div className="empty-list">No se encontraron materias.</div>}</div>
+        <label className="sidebar-search"><Search size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar materia, código o docente" aria-label="Buscar materia o docente"/><span>⌘ K</span></label>
+        <SemesterFilter
+          value={semester}
+          onChange={handleSemesterChange}
+          counts={semesterCounts}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={clearCatalogFilters}
+          catalogTerm={catalog.term}
+        />
+        <SelectedSubjectsSummary
+          selectedItems={selectedReconciledItems}
+          activeSemester={semester}
+          onRemove={removeChoice}
+        />
+        <div className="catalog-card"><small>CATÁLOGO ACADÉMICO · HORARIO {catalog.term}</small><select aria-label="Elegir catálogo" value={catalog.id} onChange={e=>{setActiveId(e.target.value);setChoices([])}}>{catalogs.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select><div><span>{subjectCount(catalog)} en oferta</span><span>·</span><span>62 en pensum</span><span>·</span><span>{groupCount(catalog)} grupos</span></div></div>
+        <SubjectCatalogList
+          items={filteredItems}
+          selectedChoiceCodes={selectedChoiceCodes}
+          semester={semester}
+          hasActiveFilters={hasActiveFilters}
+          onToggle={toggleItem}
+          onSelectAllSemesters={()=>handleSemesterChange('all')}
+          onClearFilters={clearCatalogFilters}
+        />
         <div className="side-footer"><div className="privacy-small"><ShieldCheck size={17}/><span>Privado y sin registro.<small>Tus datos no salen de este navegador.</small></span></div></div>
       </aside>
       <main className="planner-main">
@@ -187,7 +225,7 @@ function Planner({onHome}:{onHome:()=>void}){
         <div className="page-tabs" role="tablist" aria-label="Secciones del planificador"><button role="tab" aria-selected={tab==='courses'} className={tab==='courses'?'active':''} onClick={()=>setTab('courses')}><BookOpen size={16}/> Asignaturas <span>{choices.length}</span></button><button role="tab" aria-selected={tab==='filters'} className={tab==='filters'?'active':''} onClick={()=>setTab('filters')}><ListFilter size={16}/> Preferencias</button><button role="tab" aria-selected={tab==='saved'} className={tab==='saved'?'active':''} onClick={()=>setTab('saved')}><Heart size={16}/> Guardados <span>{saved.length}</span></button></div>
         {tab==='courses'&&<section className="panel control-panel"><div className="panel-heading"><div><h2>Materias elegidas</h2><p>Define qué profesores o grupos prefieres. Si no estableces filtros, incluiremos todas las opciones posibles.</p></div><div className="section-bubble"><Users size={17}/></div></div>
           {selected.length===0?<div className="selection-empty"><div className="selection-illustration"><BookOpen size={28}/></div><h3>Empieza seleccionando materias</h3><p>Escoge asignaturas desde la lista de la izquierda para personalizar tus clases.</p></div>:
-          <div className="choice-grid">{selected.map(s=><TeacherControls key={s.code} subject={s} choice={choices.find(x=>x.code===s.code)!} onChange={updateChoice} prefs={prefs} catalog={catalog} choices={choices}/>)}</div>}
+          <div className="choice-grid">{selected.map(s=><TeacherControls key={s.code} subject={s} choice={choices.find(x=>x.code===s.code)!} onChange={updateChoice} prefs={prefs} catalog={catalog} choices={choices} curriculumItem={reconciled.byOfferingCode.get(s.code)}/>)}</div>}
           {selected.length>0&&<button className="inline-go" onClick={()=>setTab('filters')}>Personalizar preferencias de horario <ArrowRight size={16}/></button>}
         </section>}
         {tab==='filters'&&<section className="panel control-panel"><div className="panel-heading"><div><h2>Tu semana, tus reglas</h2><p>Las restricciones son obligatorias; la prioridad elegida solo ordena resultados válidos.</p></div><div className="section-bubble"><ListFilter size={17}/></div></div>
@@ -203,14 +241,24 @@ function Planner({onHome}:{onHome:()=>void}){
           {conflictMessages.length>0&&<div className="tiny-alert" role="alert"><strong>Cruce de horario detectado:</strong> {conflictMessages.join(' ')}</div>}
           <div className="result-list">{displayed.map((result,i)=>{const index=page*10+i;return <button className={'result-item'+(activeSchedule?.key===result.key?' active':'')} key={result.key} onClick={()=>{setSelectedResult(index);setShowDetail(false)}} aria-pressed={activeSchedule?.key===result.key}><span className="result-num">{String(index+1).padStart(2,'0')}</span><span className="result-info"><strong>Opción {index+1}</strong><small>{result.groups.length} materias · {result.days} días de clase · {Math.round(result.gaps/60*10)/10} h de huecos</small></span><span className="result-time"><Clock3 size={14}/>{formatHour(result.earliest)}–{formatHour(result.latest)}</span><ChevronRight size={18}/></button>})}</div>
           {computed.schedules.length>0&&<div className="results-footer"><div className="page-controls"><button disabled={page===0} onClick={()=>setPage(x=>Math.max(0,x-1))} aria-label="Página anterior"><ChevronLeft size={18}/></button><span>Página {page+1} de {pageCount}</span><button disabled={page>=pageCount-1} onClick={()=>setPage(x=>Math.min(pageCount-1,x+1))} aria-label="Página siguiente"><ChevronRight size={18}/></button></div>{computed.truncated&&<button className="btn-outline small" onClick={()=>setBatchSize(x=>Math.min(20000,x+1000))} disabled={batchSize>=20000}>Explorar más <ArrowRight size={15}/></button>}<button className="link-btn" onClick={()=>setShowDetail(x=>!x)}>{showDetail?'Ocultar':'Ver'} detalle del horario elegido <ChevronDown size={16}/></button></div>}
-          {showDetail&&activeSchedule&&<div className="schedule-detail">{activeSchedule.groups.map(x=><div key={x.code}><div className="detail-name"><strong>{x.code} · {x.name}</strong><span className={'status '+badges[x.group.teacherSource]}>{sourceText(x.group.teacherSource)}</span></div><p>{x.group.label} · {x.group.teacher||'Docente por confirmar'} {x.group.inferredFrom&&`· Basado en ${x.group.inferredFrom}`}</p>{x.group.sessions.map((s,i)=><small key={i}>{DAY_NAMES[s.day]}, {formatHour(s.start)}–{formatHour(s.end)} · {s.room}</small>)}</div>)}</div>}
+          {showDetail&&activeSchedule&&<div className="schedule-detail">{activeSchedule.groups.map(x=>{const recItem=reconciled.byOfferingCode.get(x.code);return <div key={x.code}><div className="detail-name"><strong>{recItem&&recItem.curriculumCode!==x.code?`${recItem.curriculumCode} (${x.code})`:x.code} · {recItem?recItem.curriculumName:x.name}</strong><span className={'status '+badges[x.group.teacherSource]}>{sourceText(x.group.teacherSource)}</span></div><p>{x.group.label} · {x.group.teacher||'Docente por confirmar'} {x.group.inferredFrom&&`· Basado en ${x.group.inferredFrom}`}</p>{x.group.sessions.map((s,i)=><small key={i}>{DAY_NAMES[s.day]}, {formatHour(s.start)}–{formatHour(s.end)} · {s.room}</small>)}</div>;})}</div>}
         </section>
         <section className="panel calendar-panel"><div className="calendar-toolbar"><div className="toolbar-title"><span className="section-bubble blue"><CalendarDays size={19}/></span><div><h2>Tu calendario semanal</h2><p>{activeSchedule?`${activeSchedule.days} días con clase · ${Math.round(activeSchedule.gaps/60*10)/10} horas libres entre clases`:'Una vista clara de tu semana, de lunes a domingo'}</p></div></div><div className="toolbar-actions"><button disabled={!activeSchedule} onClick={()=>{void saveCurrent()}} className="btn-outline small"><Heart size={15}/> Guardar</button><button disabled={!activeSchedule||!!busyExport} className="btn-outline small" onClick={()=>{void exportCurrent('excel')}}><FileSpreadsheet size={15}/> Excel</button><button disabled={!activeSchedule||!!busyExport} className="btn-primary small" onClick={()=>{void exportCurrent('pdf')}}><FileDown size={15}/> PDF</button></div></div>
           {unknownSelected>0&&<div className="estimate-banner"><Info size={16}/><span>Este horario incluye {unknownSelected} {unknownSelected===1?'materia con docente estimado o pendiente':'materias con docentes estimados o pendientes'}. Verifica la asignación oficial antes de matricularte.</span></div>}
           <WeeklyCalendar schedule={activeSchedule}/>
           <div className="calendar-foot"><span><span className="legend-dot blue-dot"/> Clases seleccionadas</span><span><span className="legend-dot mint-dot"/> Un grupo por materia</span><span><span className="legend-dot orange-dot"/> Profesores por verificar en detalles</span></div>
         </section>
-        <div className="catalog-extra"><div><Info size={17}/><span>Catálogo {catalog.term}. {unknownCount} grupos tienen docentes estimados o pendientes. Estos datos son informativos, no garantizan cupos ni inscripción.</span></div><div><button className="link-btn" onClick={()=>exportJson(catalog)}>Respaldar JSON</button><button className="link-btn" onClick={()=>exportHtml(catalog)}>Exportar HTML</button></div></div>
+        <div className="catalog-extra"><div><Info size={17}/><span>Catálogo {catalog.term}. {unknownCount} grupos tienen docentes estimados o pendientes. Conciliación curricular: {semesterCounts.all.available}/62 materias del pensum con grupos publicados ({reconciled.incidents.length} equivalencias/incidencias auditadas).</span></div><div><button className="link-btn" onClick={()=>setShowReconcileReport(v=>!v)}>{showReconcileReport?'Ocultar':'Ver'} conciliación ({reconciled.incidents.length})</button><button className="link-btn" onClick={()=>exportJson(catalog)}>Respaldar JSON</button><button className="link-btn" onClick={()=>exportHtml(catalog)}>Exportar HTML</button></div></div>
+        {showReconcileReport&&<section className="panel reconcile-report-panel" aria-label="Reporte de conciliación entre malla curricular y oferta de horarios">
+          <div className="panel-heading"><div><h2>Conciliación malla curricular ↔ horario {catalog.term}</h2><p>Auditoría de equivalencias de código, colisiones controladas (ej. SS802, SS706, SS806) y asignaturas sin oferta en el período activo.</p></div></div>
+          <div className="reconcile-report-grid">
+            {reconciled.incidents.map((inc,idx)=><div key={idx} className="reconcile-incident-card">
+              <strong>{inc.curriculumCode?`Malla ${inc.curriculumCode} ↔ Horario ${inc.offeringCode}`:`Horario ${inc.offeringCode}`}</strong>
+              <span>{inc.curriculumName?`${inc.curriculumName} (${inc.offeringName})`:inc.offeringName}</span>
+              <small>{inc.detail}</small>
+            </div>)}
+          </div>
+        </section>}
       </main>
     </div>
     <div className="mobile-selection-bar"><span><strong>{choices.length}</strong> materias</span><span>{computed.schedules.length} combinaciones</span><button onClick={()=>setTab('filters')}>Filtros <ListFilter size={15}/></button></div>
@@ -219,7 +267,7 @@ function Planner({onHome}:{onHome:()=>void}){
 }
 export default function App(){
   const [view,setView]=useState<'landing'|'planner'>('landing');
-  useEffect(()=>{const listener=()=>{if(location.hash==='#planificador')setView('planner');else setView('landing');};window.addEventListener('hashchange',listener);listener();return()=>window.removeEventListener('hashchange',listener);},[]);
+  useEffect(()=>{const listener=()=>{const hasSemParam=new URLSearchParams(location.search).has('semestre')||new URLSearchParams(location.search).has('semester');if(location.hash.startsWith('#planificador')||hasSemParam)setView('planner');else setView('landing');};window.addEventListener('hashchange',listener);listener();return()=>window.removeEventListener('hashchange',listener);},[]);
   function navigate(next:'landing'|'planner'){window.location.hash=next==='planner'?'planificador':'';setView(next);window.scrollTo({top:0});}
   return view==='landing'?<Landing onStart={()=>navigate('planner')}/>:<Planner onHome={()=>navigate('landing')}/>;
 }

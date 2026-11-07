@@ -1,4 +1,5 @@
 import { Catalog, Choice, DAY_NAMES, Group, Preferences, SHORT_DAYS, Schedule, Session, Subject, formatHour, normalizeGroup } from './types';
+import { reconcileCurriculumAndCatalog, resolveChoiceSubject } from './curriculum';
 
 export function overlap(a:Session,b:Session):boolean {
   return a.day===b.day && a.start<b.end && b.start<a.end;
@@ -65,7 +66,8 @@ export function scoreSchedule(groups:Schedule['groups'],prefs:Preferences):Omit<
 export function generateSchedules(catalog:Catalog,choices:Choice[],prefs:Preferences,opts:{limit?:number;maxVisited?:number}={}) {
   const limit=opts.limit ?? 1200;
   const maxVisited=opts.maxVisited ?? 300_000;
-  const mapped=choices.map(choice=>({subject:catalog.subjects.find(s=>s.code===choice.code),choice})).filter((x):x is {subject:Subject;choice:Choice}=>Boolean(x.subject));
+  const reconciled=reconcileCurriculumAndCatalog(catalog);
+  const mapped=choices.map(choice=>({subject:resolveChoiceSubject(choice,catalog,reconciled),choice})).filter((x):x is {subject:Subject;choice:Choice}=>Boolean(x.subject));
   if(mapped.length===0)return {schedules:[] as Schedule[],visited:0,truncated:false,infeasible:false,problemSubjects:[] as string[]};
   const options=mapped.map(({subject,choice})=>({subject,groups:groupOptions(subject,choice,prefs)})).sort((a,b)=>a.groups.length-b.groups.length);
   const problemSubjects=options.filter(x=>!x.groups.length).map(x=>x.subject.code);
@@ -95,10 +97,10 @@ export function generateSchedules(catalog:Catalog,choices:Choice[],prefs:Prefere
 }
 
 export function groupConflictReason(subjectCode:string,candidateGroup:Group,catalog:Catalog,choices:Choice[],prefs:Preferences):string|null {
+  const reconciled=reconcileCurriculumAndCatalog(catalog);
   for(const otherChoice of choices){
-    if(otherChoice.code===subjectCode)continue;
-    const otherSubject=catalog.subjects.find(s=>s.code===otherChoice.code);
-    if(!otherSubject)continue;
+    const otherSubject=resolveChoiceSubject(otherChoice,catalog,reconciled);
+    if(!otherSubject || otherSubject.code===subjectCode || otherChoice.code===subjectCode)continue;
     if(otherChoice.pinnedGroup){
       const pinned=otherSubject.groups.find(g=>g.id===otherChoice.pinnedGroup);
       if(pinned){
@@ -128,7 +130,8 @@ export function groupConflictReason(subjectCode:string,candidateGroup:Group,cata
 
 export function describeConflicts(catalog:Catalog,choices:Choice[],prefs:Preferences):string[] {
   const details:string[]=[];
-  const mapped=choices.map(choice=>({subject:catalog.subjects.find(s=>s.code===choice.code),choice})).filter((x):x is {subject:Subject;choice:Choice}=>Boolean(x.subject));
+  const reconciled=reconcileCurriculumAndCatalog(catalog);
+  const mapped=choices.map(choice=>({subject:resolveChoiceSubject(choice,catalog,reconciled),choice})).filter((x):x is {subject:Subject;choice:Choice}=>Boolean(x.subject));
   for(let i=0;i<mapped.length;i++){
     const a=mapped[i];
     const groupsA=groupOptions(a.subject,a.choice,prefs);

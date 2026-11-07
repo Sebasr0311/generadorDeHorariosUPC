@@ -291,3 +291,67 @@ test('objetivos táctiles de al menos 32px en teléfonos', async ({ page }, test
   expect(await smallTargets()).toEqual([]);
 });
 
+test('filtro por semestre curricular (I-IX y Todos), selección multi-semestre, materias sin oferta y colisión SS802', async ({ page }) => {
+  await page.goto('./#planificador');
+
+  const todosBtn = page.getByRole('button', { name: /^Todos los semestres/i });
+  await expect(todosBtn).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.subject-list .subject-row')).toHaveCount(53);
+  await expect(page.locator('.subject-list .subject-row-unoffered')).toHaveCount(9);
+
+  // Seleccionar Semestre III: exactamente sus 8 materias canónicas y 19 créditos
+  const sem3Btn = page.getByRole('button', { name: /^Semestre III \(/i });
+  await sem3Btn.click();
+  await expect(sem3Btn).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.semester-summary-bar')).toContainText('Semestre III:');
+  await expect(page.locator('.semester-summary-bar')).toContainText('8 materias · 19 créditos');
+  await expect(page.locator('.subject-list .subject-row')).toHaveCount(8);
+
+  // Seleccionar Estructura de Datos en Semestre III
+  await page.getByRole('button', { name: /SS301 Estructura de Datos/i }).click();
+  await expect(page.locator('.selected-subjects-summary')).toContainText('1 seleccionada · 3 cr.');
+
+  // Cambiar a Semestre V y seleccionar Base de Datos Avanzadas (SS503 en malla, SS802 en PDF)
+  const sem5Btn = page.getByRole('button', { name: /^Semestre V \(/i });
+  await sem5Btn.click();
+  await expect(page.locator('.subject-list .subject-row')).toHaveCount(7);
+  await expect(page.locator('.selected-subjects-summary')).toContainText('+1 de otro semestre');
+
+  await page.getByRole('button', { name: /SS503 Base de Datos Avanzadas/i }).click();
+  await expect(page.locator('.selected-subjects-summary')).toContainText('2 seleccionadas · 6 cr. · 2 semestres');
+  await expect(page.getByText(/opción 1/i).first()).toBeVisible();
+
+  // Volver a Semestre III: ambas permanecen seleccionadas
+  await sem3Btn.click();
+  await expect(page.getByRole('button', { name: /SS301 Estructura de Datos/i })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.selected-subjects-summary')).toContainText('SS301');
+  await expect(page.locator('.selected-subjects-summary')).toContainText('SS503');
+
+  // Ir a Semestre VIII: Gestión de Proyectos TI (SS802 en malla) aparece sin grupos publicados y deshabilitada (sin vincularse falsamente con SS802 del PDF)
+  const sem8Btn = page.getByRole('button', { name: /^Semestre VIII \(/i });
+  await sem8Btn.click();
+  const gptiBtn = page.getByRole('button', { name: /SS802 Gestión de Proyectos TI/i });
+  await expect(gptiBtn).toBeVisible();
+  await expect(gptiBtn).toBeDisabled();
+  await expect(gptiBtn).toContainText('Sin grupos publicados / No disponible para este período');
+
+  // Búsqueda combinada sin coincidencias en el semestre activo -> estado vacío y Limpiar filtros
+  const searchInput = page.getByPlaceholder(/Buscar materia/i);
+  await searchInput.fill('calculo diferencial');
+  await expect(page.locator('.empty-list')).toContainText('No se encontraron materias');
+  await page.locator('.clear-filters-btn').click();
+
+  await expect(todosBtn).toHaveAttribute('aria-pressed', 'true');
+  await expect(searchInput).toHaveValue('');
+  // Las 2 materias elegidas se mantienen intactas tras limpiar filtros del catálogo
+  await expect(page.locator('.selected-subjects-summary')).toContainText('2 seleccionadas · 6 cr.');
+
+  // Verificar ausencia de desbordamiento horizontal en 320, 375, 390, 768, 1024, 1440 px
+  for (const w of [320, 375, 390, 768, 1024, 1440]) {
+    await page.setViewportSize({ width: w, height: 800 });
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, `Overflow en ${w}px: ${overflow}px`).toBeLessThanOrEqual(2);
+  }
+});
+
+

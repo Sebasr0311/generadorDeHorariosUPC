@@ -1,0 +1,114 @@
+MALLA CURRICULAR — INGENIERÍA DE SISTEMAS
+Universidad Popular del Cesar (UPC)
+FUENTE: imagen de la malla curricular entregada por el usuario el 07-11-2026.
+NOTA: Es la malla de referencia; el código de una materia en el PDF de horarios puede diferir.
+NUNCA reemplazar códigos de esta lista con los del PDF ni emparejar asignaturas solo por código.
+COLUMNAS: semestre | código_malla | nombre_malla | créditos | área_formación
+TOTAL: 9 semestres | 62 asignaturas | 155 créditos
+---
+
+SEMESTRE I (1) — 7 asignaturas — 16 créditos
+1 | MT104 | Cálculo Diferencial | 3 | Ciencias Básicas
+1 | MT203 | Lógica Matemática | 3 | Ciencias Básicas
+1 | SS407 | Algoritmos y Fundamentos de Programación | 3 | Ingeniería Aplicada
+1 | SS105 | Introducción a la Ingeniería de Sistemas | 2 | Ingeniería Aplicada
+1 | HM201 | Humanidades I | 2 | Formación Complementaria
+1 | UPC01 | Cátedra Upecista | 1 | Formación Complementaria
+1 | PG102 | Comunicación Oral y Escrita I | 2 | Formación Complementaria
+
+SEMESTRE II (2) — 8 asignaturas — 18 créditos
+2 | MT303B | Cálculo Integral | 3 | Ciencias Básicas
+2 | FS202 | Mecánica | 3 | Ciencias Básicas
+2 | MT301B | Álgebra Lineal | 3 | Ciencias Básicas
+2 | SS200 | Programación de Computadores I | 3 | Ingeniería Aplicada
+2 | HM202 | Humanidades II | 2 | Formación Complementaria
+2 | UPC08 | Actividad Deportiva | 1 | Formación Complementaria
+2 | PG200 | Comunicación Oral y Escrita II | 2 | Formación Complementaria
+2 | ID301 | Tech English I | 1 | Formación Complementaria
+
+SEMESTRE III (3) — 8 asignaturas — 19 créditos
+3 | MT331 | Cálculo Multivariable | 3 | Ciencias Básicas
+3 | FS400 | Electromagnetismo | 3 | Ciencias Básicas
+3 | MT403 | Estadística Descriptiva e Inferencial | 3 | Ciencias Básicas de la Ingeniería
+3 | SS300 | Programación de Computadores II | 3 | Ingeniería Aplicada
+3 | SS301 | Estructura de Datos | 3 | Ingeniería Aplicada
+3 | UPC09 | Actividad Cultural | 1 | Formación Complementaria
+3 | ING300 | Semillero de Investigación | 2 | Formación Investigativa
+3 | ID302 | Tech English II | 1 | Formación Complementaria
+
+SEMESTRE IV (4) — 7 asignaturas — 19 créditos
+4 | MT402 | Ecuaciones Diferenciales | 3 | Ciencias Básicas
+4 | FS329 | Ondas | 3 | Ciencias Básicas
+4 | AI432 | Investigación de Operaciones | 3 | Ciencias Básicas de la Ingeniería
+4 | SS462 | Programación de Computadores III | 3 | Ingeniería Aplicada
+4 | SS463 | Base de Datos | 3 | Ingeniería Aplicada
+4 | EC105 | Electiva Ciencias Administrativas, Económicas y Contables | 2 | Formación Complementaria
+4 | ING301 | Metodología de Investigación | 2 | Formación Investigativa
+
+SEMESTRE V (5) — 7 asignaturas — 18 créditos
+5 | MT309B | Análisis Numérico | 3 | Ciencias Básicas de la Ingeniería
+5 | SS500 | Arquitectura de Computadores | 3 | Ingeniería Aplicada
+5 | SS501 | Programación Web | 3 | Ingeniería Aplicada
+5 | SS502 | Ingeniería de Software I | 3 | Ingeniería Aplicada
+5 | SS503 | Base de Datos Avanzadas | 3 | Ingeniería Aplicada
+5 | UPC15 | Cátedra de la Paz | 1 | Formación Complementaria
+5 | ING302 | Seminario de Investigación | 2 | Formación Investigativa
+
+SEMESTRE VI (6) — 7 asignaturas — 18 créditos
+6 | AI700 | Ingeniería Económica | 3 | Ciencias Básicas de la Ingeniería
+6 | SS600 | Sistemas Operativos | 3 | Ingeniería Aplicada
+6 | SS601 | Modelos y Simulación | 3 | Ingeniería Aplicada
+6 | SS602 | Ingeniería de Software II | 3 | Ingeniería Aplicada
+6 | SS603 | Programación Móvil | 3 | Ingeniería Aplicada
+6 | SS706 | Cátedra Ambiental y Desarrollo Sostenible | 1 | Formación Complementaria
+6 | ING303 | Innovación y Emprendimiento Tecnológico | 2 | Formación Investigativa
+
+SEMESTRE VII (7) — 7 asignaturas — 17 créditos
+7 | FC407 | Formulación y Evaluación de Proyectos de Ingeniería | 3 | Ciencias Básicas de la Ingeniería
+7 | SS701 | Redes y Comunicaciones | 3 | Ingeniería Aplicada
+7 | SS700 | Inteligencia Artificial | 3 | Ingeniería Aplicada
+7 | SS704 | Ingeniería de Software III | 3 | Ingeniería Aplicada
+7 | SS705 | Tecnologías Inmersivas | 3 | Ingeniería Aplicada
+7 | UPC10 | Cátedra de Emprendimiento | 1 | Formación Complementaria
+7 | ING304 | Research Project | 1 | Formación Investigativa
+
+SEMESTRE VIII (8) — 7 asignaturas — 17 créditos
+8 | SS801 | Electiva Básica de Ingeniería | 2 | Ciencias Básicas de la Ingeniería
+8 | SS802 | Gestión de Proyectos TI | 3 | Ingeniería Aplicada
+8 | SS803 | Seguridad de la Información | 3 | Ingeniería Aplicada
+8 | SS804 | Optativa Profundización I | 3 | Ingeniería Aplicada
+8 | SS805 | Optativa Profundización II | 3 | Ingeniería Aplicada
+8 | SS806 | Ética Profesional | 1 | Formación Complementaria
+8 | SS807 | Proyecto de Grado I | 2 | Formación Investigativa
+
+SEMESTRE IX (9) — 4 asignaturas — 13 créditos
+9 | SS901 | Optativa Profundización III | 3 | Ingeniería Aplicada
+9 | SS902 | Optativa Profundización IV | 3 | Ingeniería Aplicada
+9 | SS903 | Optativa Profundización V | 3 | Ingeniería Aplicada
+9 | SS904 | Proyecto de Grado II | 4 | Formación Investigativa
+
+---
+TOTALES POR SEMESTRE
+Semestre | N.º asignaturas | Créditos
+I (1) | 7 | 16
+II (2) | 8 | 18
+III (3) | 8 | 19
+IV (4) | 7 | 19
+V (5) | 7 | 18
+VI (6) | 7 | 18
+VII (7) | 7 | 17
+VIII (8) | 7 | 17
+IX (9) | 4 | 13
+TOTAL | 62 | 155
+
+ADVERTENCIA DE CONCILIACIÓN CON PDF DE HORARIOS
+La malla y el reporte Academusoft son fuentes distintas. En el PDF de ejemplo se observan discrepancias, entre ellas:
+- Malla MT203 = Lógica Matemática; PDF de horarios MT117 = Lógica Matemática.
+- Malla ID301 / ID302 = Tech English I / II; PDF ID212 / ID341.
+- Malla ING300 = Semillero de Investigación; PDF SS303.
+- Malla SS503 = Base de Datos Avanzadas; PDF SS802 (pero SS802 es Gestión de Proyectos TI en esta malla).
+- Malla SS700 = Inteligencia Artificial; PDF SS702.
+- Malla SS706 = Cátedra Ambiental y Desarrollo Sostenible; PDF UPC25.
+Estas líneas son avisos para revisión, NO autorizan equivalencias automáticas incondicionales.
+Solo vincular grupos tras cotejar nombre normalizado, código, versión y unicidad; una colisión debe ir a revisión manual.
+El filtro por semestre muestra materias del pensum incluso sin grupos disponibles en el PDF; el generador requiere grupos reales.

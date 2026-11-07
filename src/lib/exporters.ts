@@ -23,7 +23,7 @@ export async function exportExcel(schedule:Schedule,catalog:Catalog){
   schedule.groups.forEach((entry,subjectIndex)=>{
     for(const s of entry.group.sessions){const row=7+(s.start-from)/30;const end=7+Math.ceil((s.end-from)/30)-1;const column=s.day+2;
       if(end>row)ws.mergeCells(row,column,end,column);
-      const c=ws.getCell(row,column);const status=entry.group.teacherSource==='estimated'?' (estimado)':entry.group.teacherSource==='confirmed'?'':' (pendiente)';
+      const c=ws.getCell(row,column);const status=entry.group.teacherSource==='estimated'?' (estimado)':entry.group.teacherSource==='possible'?' (posible)':entry.group.teacherSource==='confirmed'?'':' (pendiente)';
       c.value=`${entry.code} · ${entry.name}\n${entry.group.label} | ${formatHour(s.start)}–${formatHour(s.end)}\n${entry.group.teacher||'Docente por confirmar'}${status}\n${s.room||'Salón por confirmar'}`;
       c.alignment={vertical:'middle',wrapText:true,indent:1};c.font={name:'Aptos',size:10,bold:true,color:{argb:'FF17304A'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:palette[subjectIndex%palette.length]}};c.border={top:{style:'thin',color:{argb:'FFDAE2EF'}},bottom:{style:'thin',color:{argb:'FFDAE2EF'}},left:{style:'thin',color:{argb:'FFDAE2EF'}},right:{style:'thin',color:{argb:'FFDAE2EF'}}};
     }
@@ -38,7 +38,7 @@ export async function exportExcel(schedule:Schedule,catalog:Catalog){
   const data=await wb.xlsx.writeBuffer();
   download(new Blob([data as ArrayBuffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Traza-Horario-${safeName(catalog.term)}.xlsx`);
 }
-function statusLabel(status:string){return status==='confirmed'?'Confirmado en PDF':status==='estimated'?'Estimado del semestre anterior':'Por confirmar';}
+function statusLabel(status:string){return status==='confirmed'?'Confirmado en PDF':status==='estimated'?'Estimado del semestre anterior':status==='possible'?'Posible (referencia histórica)':'Por confirmar';}
 export async function exportPdf(schedule:Schedule,catalog:Catalog){
   const {jsPDF}=await import('jspdf');
   const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
@@ -72,7 +72,7 @@ export async function exportPdf(schedule:Schedule,catalog:Catalog){
   const header=()=>{doc.setFillColor(233,240,250);doc.rect(margin,y,w-2*margin,9,'F');doc.setTextColor(32,60,91);doc.setFont('helvetica','bold');doc.setFontSize(8);['Código','Asignatura','Grupo','Día','Hora','Salón','Docente y estado'].forEach((v,i)=>doc.text(v,xs[i]+2,y+5.7));y+=10;};header();
   for(const entry of schedule.groups)for(const s of entry.group.sessions){
     if(y>h-15){doc.addPage('a4','landscape');y=15;header();}
-    const status=entry.group.teacherSource==='estimated'?' [estimado]':entry.group.teacherSource==='unassigned'?' [sin asignar]':'';
+    const status=entry.group.teacherSource==='estimated'?' [estimado]':entry.group.teacherSource==='possible'?' [posible]':entry.group.teacherSource==='unassigned'?' [sin asignar]':'';
     const values=[entry.code,entry.name,entry.group.label,DAY_NAMES[s.day],`${formatHour(s.start)}-${formatHour(s.end)}`,s.room,`${entry.group.teacher||'Por confirmar'}${status}`];
     if(Math.round(y)%2===0){doc.setFillColor(248,250,253);doc.rect(margin,y,w-2*margin,8,'F');}
     doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(45,62,81);

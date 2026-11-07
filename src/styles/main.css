@@ -2006,6 +2006,10 @@ button:disabled,
   min-width: 0;
 }
 
+.choice-control-fields label select option {
+  white-space: nowrap;
+}
+
 .choice-control-fields label select:disabled {
   background: #e2e8f0;
   color: #475569;
@@ -2013,6 +2017,133 @@ button:disabled,
 
 .choice-control-fields label.full-field {
   grid-column: span 2;
+}
+
+.teacher-groups-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.group-option-btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  text-align: left;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.group-option-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.group-option-btn.active {
+  background: #eff6ff;
+  border-color: var(--blue);
+}
+
+.group-option-btn strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.group-option-btn.active strong {
+  color: #1e3a8a;
+}
+
+.group-option-btn small {
+  display: block;
+  font-size: 10.5px;
+  color: #334155;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.group-option-btn.active small {
+  color: #1e293b;
+}
+
+.pinned-group-summary {
+  margin-top: 10px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+}
+
+.pinned-group-summary strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #1e3a8a;
+  line-height: 1.35;
+}
+
+.pinned-group-summary small {
+  display: block;
+  font-size: 10.5px;
+  color: #1e293b;
+  font-weight: 600;
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+.group-list-drawer {
+  margin-top: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.group-drawer-toggle {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  color: #1e3a8a;
+  background: #ffffff;
+  border: 0;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.group-drawer-toggle:hover {
+  background: #f1f5f9;
+}
+
+.group-drawer-toggle svg {
+  flex-shrink: 0;
+}
+
+.group-drawer-toggle.open {
+  border-bottom: 1px solid #e2e8f0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.group-drawer-toggle.open svg {
+  transform: rotate(180deg);
+}
+
+.group-list-drawer .teacher-groups-list {
+  margin-top: 0;
+  padding: 10px;
 }
 
 .teacher-disclaimer {
@@ -2506,6 +2637,7 @@ button:disabled,
 
 .result-list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
   margin-top: 18px;
 }
@@ -2964,7 +3096,8 @@ button:disabled,
   .side-panel {
     padding: 20px 14px 14px;
   }
-  .choice-grid {
+  .choice-grid,
+  .result-list {
     grid-template-columns: 1fr;
   }
   .planner-header {

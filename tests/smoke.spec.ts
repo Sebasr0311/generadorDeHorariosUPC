@@ -21,6 +21,37 @@ test('selección y generación de horario desde catálogo de ejemplo', async ({ 
   await page.getByRole('button', { name: /ESTRUCTURA DE DATOS/i }).first().click();
   await expect(page.getByRole('heading', { name: /combinaciones disponibles/i })).toBeVisible();
   await expect(page.getByText(/opción 1/i).first()).toBeVisible();
+
+  const resultsBox = await page.locator('.results-panel').boundingBox();
+  const calendarBox = await page.locator('.calendar-panel').boundingBox();
+  expect(resultsBox).not.toBeNull();
+  expect(calendarBox).not.toBeNull();
+  expect(resultsBox!.y).toBeLessThan(calendarBox!.y);
+
+  const groupSelect = page.getByLabel(/Grupo para ESTRUCTURA DE DATOS/i);
+  const allGroupOptions = await groupSelect.locator('option').allTextContents();
+  expect(allGroupOptions.length).toBeGreaterThan(1);
+  for (const optText of allGroupOptions.slice(1)) {
+    expect(optText).toMatch(/^Grupo\s+.+\s·\s.+\s·\s.+\d{2}:\d{2}–\d{2}:\d{2}/);
+  }
+
+  const teacherSelect = page.getByLabel(/Profesor para ESTRUCTURA DE DATOS/i);
+  const teacherVal = await teacherSelect.locator('option').nth(1).getAttribute('value');
+  const teacherName = (await teacherSelect.locator('option').nth(1).textContent())?.trim() || '';
+  if (teacherVal) {
+    await teacherSelect.selectOption(teacherVal);
+    const filteredOptions = await groupSelect.locator('option').allTextContents();
+    expect(filteredOptions.length).toBeGreaterThan(1);
+    for (const optText of filteredOptions.slice(1)) {
+      expect(optText).toContain(teacherName);
+      expect(optText).toMatch(/\d{2}:\d{2}–\d{2}:\d{2}/);
+    }
+    const groupButtons = page.getByRole('group', { name: /Grupos del docente en ESTRUCTURA DE DATOS/i }).locator('button');
+    await expect(groupButtons.first()).toBeVisible();
+    await expect(groupButtons.first()).toContainText(teacherName);
+    await expect(groupButtons.first()).toContainText(/Grupo\s+/);
+    await expect(groupButtons.first()).toContainText(/\d{2}:\d{2}–\d{2}:\d{2}/);
+  }
   await page.getByRole('button', { name: /guardar/i }).first().click();
   await page.getByRole('tab', { name: /guardados/i }).click();
   await expect(page.getByText(/mi horario 2026-2/i).first()).toBeVisible();
@@ -172,6 +203,7 @@ test('botones legibles (contraste >= 4.5 y texto visible) y sin textos o iconos 
         }
         const children = Array.from(container.querySelectorAll('*')).filter(el => {
           if (!isVisible(el)) return false;
+          if (el.tagName.toLowerCase() === 'option') return false;
           if (el.tagName.toLowerCase() === 'svg') return true;
           return Array.from(el.childNodes).some(n => n.nodeType === 3 && (n.textContent || '').trim().length > 0);
         });
@@ -210,6 +242,9 @@ test('botones legibles (contraste >= 4.5 y texto visible) y sin textos o iconos 
     await rows.nth(i).click();
   }
   await expect(page.getByText(/opción 1/i).first()).toBeVisible();
+  expect(await checkVisualIntegrity()).toEqual([]);
+
+  await page.locator('.group-drawer-toggle').first().click();
   expect(await checkVisualIntegrity()).toEqual([]);
 
   await page.getByRole('tab', { name: /preferencias/i }).click();

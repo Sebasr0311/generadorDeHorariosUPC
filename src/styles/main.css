@@ -3405,3 +3405,71 @@ button:disabled,
     opacity: 1;
   }
 }
+
+/* React Bits integrations (see src/components/reactbits) */
+.hero-dotgrid {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  /* Keep the grid behind the calendar preview and away from body copy. */
+  -webkit-mask-image: radial-gradient(ellipse 48% 70% at 66% 48%, #000 35%, transparent 85%);
+  mask-image: radial-gradient(ellipse 48% 70% at 66% 48%, #000 35%, transparent 85%);
+}
+
+.hero h1 .hero-line {
+  justify-content: flex-start;
+}
+
+.hero-accent-in {
+  display: inline-block;
+  animation: hero-accent-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.32s both;
+}
+
+@keyframes hero-accent-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+.hero-magnet {
+  vertical-align: middle;
+}
+
+.cta-inner .star-border.btn-white {
+  border-color: transparent;
+}
+
+.calendar-event {
+  animation: calendar-event-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes calendar-event-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@media (max-width: 900px) {
+  .hero h1 .hero-line {
+    justify-content: center;
+  }
+  .hero-dotgrid {
+    -webkit-mask-image: radial-gradient(ellipse 70% 14% at 50% 15%, #000 20%, transparent 100%);
+    mask-image: radial-gradient(ellipse 70% 14% at 50% 15%, #000 20%, transparent 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-accent-in {
+    animation: none;
+  }
+}

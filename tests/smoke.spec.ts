@@ -121,10 +121,16 @@ test('botones legibles (contraste >= 4.5 y texto visible) y sin textos o iconos 
         return r.width > 0 && r.height > 0;
       }
 
-      for (const btn of document.querySelectorAll('button, a.btn-text, a.btn-primary, [role="tab"]')) {
+      const hasOwnText = (el: Element) => Array.from(el.childNodes).some(n => n.nodeType === 3 && (n.textContent || '').trim().length > 0);
+      const controls = Array.from(document.querySelectorAll('button, a.btn-text, a.btn-primary, [role="tab"], summary'));
+      // Also cover text nested inside controls (e.g. tab counters) and solid-colored decorative badges.
+      const nested = controls.flatMap(c => Array.from(c.querySelectorAll('span, strong, small')).filter(hasOwnText));
+      const badges = Array.from(document.querySelectorAll('.avatar-stack span, .step-card > span, .mock-avatars, .status, .catalog-header-tag'));
+      for (const btn of [...controls, ...nested, ...badges]) {
         if (!isVisible(btn)) continue;
         const cs = getComputedStyle(btn);
         const fs = parseFloat(cs.fontSize);
+        const large = fs >= 24 || (fs >= 18.66 && parseInt(cs.fontWeight, 10) >= 700);
         const text = ((btn as HTMLElement).innerText || btn.textContent || '').trim().replace(/\s+/g, ' ');
         if (fs === 0 && text.length > 0) {
           issues.push(`Texto oculto con font-size:0 en botón "${text}"`);
@@ -132,10 +138,12 @@ test('botones legibles (contraste >= 4.5 y texto visible) y sin textos o iconos 
         const bg = getEffectiveBg(btn);
         const rawFg = parseRgba(cs.color);
         const effOp = getEffectiveOpacity(btn);
+        // Content still hidden by a scroll-reveal animation is not on screen yet.
+        if (effOp < 0.1) continue;
         const fg = blend({ ...rawFg, a: rawFg.a * effOp }, bg);
         const cr = contrast(fg, bg);
-        if (cr < 4.5) {
-          issues.push(`Contraste bajo (${cr.toFixed(2)}) en botón "${text || btn.getAttribute('aria-label')}"`);
+        if (cr < (large ? 3 : 4.5)) {
+          issues.push(`Contraste bajo (${cr.toFixed(2)}) en "${text || btn.getAttribute('aria-label')}"`);
         }
       }
 
@@ -206,5 +214,37 @@ test('botones legibles (contraste >= 4.5 y texto visible) y sin textos o iconos 
 
   await page.getByRole('tab', { name: /preferencias/i }).click();
   expect(await checkVisualIntegrity()).toEqual([]);
+
+  // Hover states must stay readable too.
+  for (const name of [/asignaturas/i, /guardados/i]) {
+    await page.getByRole('tab', { name }).hover();
+    expect(await checkVisualIntegrity()).toEqual([]);
+  }
+  await page.getByRole('button', { name: /guardar/i }).first().hover();
+  expect(await checkVisualIntegrity()).toEqual([]);
+});
+
+test('objetivos táctiles de al menos 32px en teléfonos', async ({ page }, testInfo) => {
+  test.skip(!testInfo.project.name.startsWith('mobile'), 'Solo aplica a viewports de teléfono');
+  const smallTargets = () => page.evaluate(() => {
+    const out: string[] = [];
+    for (const el of document.querySelectorAll('button, a[href], [role="tab"], summary, select')) {
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || cs.display === 'inline') continue;
+      if (el.closest('details:not([open])') && !el.closest('summary')) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0 || r.width <= 1) continue;
+      if (r.width < 32 || r.height < 32) out.push(`${((el as HTMLElement).innerText || el.getAttribute('aria-label') || el.tagName).trim().slice(0, 30)} ${Math.round(r.width)}x${Math.round(r.height)}`);
+    }
+    return out;
+  });
+  await page.goto('./');
+  expect(await smallTargets()).toEqual([]);
+  await page.goto('./#planificador');
+  const rows = page.locator('.subject-row');
+  for (let i = 0; i < 3; i++) await rows.nth(i).click();
+  await expect(page.getByText(/opción 1/i).first()).toBeVisible();
+  await page.getByRole('button', { name: /guardar/i }).first().click();
+  expect(await smallTargets()).toEqual([]);
 });
 

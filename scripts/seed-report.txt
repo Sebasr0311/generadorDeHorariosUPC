@@ -1,0 +1,89 @@
+Materias 53 Grupos 512 Clases únicas 770 raw 770 warnings 76
+WARN: HM201 grupo 08-AMBIENTAL: docente ausente del directorio
+WARN: HM201 grupo 05-DERECHO: docente ausente del directorio
+WARN: HM201 grupo 01-DERECHO: docente ausente del directorio
+WARN: HM201 grupo 14-DERECHO: docente ausente del directorio
+WARN: HM201 grupo 02-AMBIENTAL: docente ausente del directorio
+WARN: ING302 grupo 08- ING AGROINDUSTRIAL: docente ausente del directorio
+WARN: ING302 grupo 07-ING.AGROINDUSTRIAL: docente ausente del directorio
+WARN: MT104 grupo 07-AGROINDUSTRIA: docente ausente del directorio
+WARN: MT104 grupo 03-ING.AMBIENTAL: docente ausente del directorio
+WARN: MT104 grupo 07-AGROINDUSTRIA: docente ausente del directorio
+WARN: MT104 grupo 01-ING.AMBIENTAL: docente ausente del directorio
+WARN: MT104 grupo 03-ING.AMBIENTAL: docente ausente del directorio
+WARN: MT104 grupo 01-ING.AMBIENTAL: docente ausente del directorio
+WARN: SS105 grupo 02-CAMPUS: varios docentes listados; asignación por verificar
+WARN: SS303 grupo 04-CAMPUS: varios docentes listados; asignación por verificar
+WARN: SS407 grupo 12-ING. ELECTRONICA: docente ausente del directorio
+WARN: SS407 grupo 17-ING. AGRO-AMBIEN: docente ausente del directorio
+WARN: SS407 grupo 18-ING. AGRO-AMBIEN: docente ausente del directorio
+WARN: SS407 grupo 19-ING. AGRO-AMBIEN: docente ausente del directorio
+WARN: SS407 grupo 10-ING. ELECTRONICA: docente ausente del directorio
+WARN: SS407 grupo 14- ING. AGRO-AMBIEN: docente ausente del directorio
+WARN: SS407 grupo 12-ING. ELECTRONICA: docente ausente del directorio
+WARN: SS407 grupo 18-ING. AGRO-AMBIEN: docente ausente del directorio
+WARN: SS407 grupo 17-ING. AGRO-AMBIEN: docente ausente del directorio
+WARN: SS407 grupo 13-ING. ELECTRONICA: docente ausente del directorio
+WARN: SS407 grupo 19-ING. AGRO-AMBIEN: docente ausente del directorio
+WARN: SS407 grupo 10-ING. ELECTRONICA: docente ausente del directorio
+WARN: SS407 grupo 14- ING. AGRO-AMBIEN: docente ausente del directorio
+WARN: SS407 grupo 23-COPEY ING AGROINDUSTRIAL: docente ausente del directorio
+WARN: SS407 grupo 13-ING. ELECTRONICA: docente ausente del directorio
+WARN: UPC01 grupo 28-PRI MATEMATICAS VIRTUAL: docente ausente del directorio
+WARN: UPC01 grupo 33-CAMPUS VIRTUAL: docente ausente del directorio
+WARN: UPC01 grupo 14-PRI TURISTICA VIRTUAL: docente ausente del directorio
+WARN: UPC01 grupo 03-PRI ADMON NOCHE VIRTUAL: docente ausente del directorio
+WARN: UPC01 grupo 45-PRI DERECHO NOCHE: docente ausente del directorio
+AI432 INVESTIGACION DE OPERACIONES grupos 4 sesiones 8
+AI700 INGENIERIA ECONOMICA grupos 2 sesiones 4
+FC407 FORMULACION Y EVALU DE PROYEC EN INGENIERIA grupos 10 sesiones 12
+FS202 MECANICA grupos 24 sesiones 68
+FS329 ONDAS grupos 7 sesiones 21
+FS400 ELECTROMAGNETISMO grupos 12 sesiones 36
+HM201 HUMANIDADES I grupos 19 sesiones 19
+HM202 HUMANIDADES II grupos 13 sesiones 13
+ID212 TECH ENGLISH I grupos 10 sesiones 10
+ID341 TECH ENGLISH II grupos 8 sesiones 8
+ING301 METODOLOGIA DE LA INVESTIGACION grupos 7 sesiones 7
+ING302 SEMINARIO DE INVESTIGACION grupos 7 sesiones 9
+MT104 CALCULO DIFERENCIAL grupos 14 sesiones 27
+MT117 LOGICA MATEMATICA grupos 7 sesiones 14
+MT301B ALGEBRA LINEAL grupos 14 sesiones 28
+MT303B CALCULO INTEGRAL grupos 16 sesiones 29
+MT309B ANALISIS NUMERICO grupos 5 sesiones 5
+MT331 CALCULO MULTIVARIABLE grupos 8 sesiones 16
+MT402 ECUACIONES DIFERENCIALES grupos 4 sesiones 8
+MT403 ESTADISTICA DESCRIPTIVA E INFERENCIAL grupos 7 sesiones 14
+PG102 COMUNICACION ORAL Y ESCRITA I grupos 7 sesiones 7
+PG200 COMUNICACION ORAL Y ESCRITA II grupos 8 sesiones 8
+SS105 INTRODUCCION A LA INGENIERIA DE SISTEMAS grupos 7 sesiones 7
+SS200 PROGRAMACION DE COMPUTADORES I grupos 11 sesiones 22
+SS300 PROGRAMACION DE COMPUTADORES II grupos 6 sesiones 12
+SS301 ESTRUCTURA DE DATOS grupos 7 sesiones 14
+SS303 SEMILLERO DE INVESTIGACION grupos 6 sesiones 6
+SS407 ALGORITMOS Y FUNDAMENTOS DE PROGRAMACION grupos 23 sesiones 43
+SS462 PROGRAMACION DE COMPUTADORES III grupos 7 sesiones 14
+SS463 BASE DE DATOS grupos 8 sesiones 16
+SS500 ARQUITECTURA DE COMPUTADORES grupos 4 sesiones 8
+SS501 PROGRAMACION WEB grupos 4 sesiones 8
+SS502 INGENIERIA DE SOFTWARE I grupos 3 sesiones 6
+SS600 SISTEMAS OPERATIVOS grupos 5 sesiones 10
+SS601 MODELOS Y SIMULACION grupos 3 sesiones 6
+SS602 INGENIERIA DE SOFTWARE II grupos 4 sesiones 8
+SS603 PROGRAMACION MOVIL grupos 4 sesiones 8
+SS604 INNOVACION Y EMPRENDIMIENTO TECNOLOGICO grupos 2 sesiones 2
+SS701 REDES Y COMUNICACIONES grupos 3 sesiones 6
+SS702 INTELIGENCIA ARTIFICIAL grupos 3 sesiones 6
+SS706 INGENIERIA DE SOFTWARE III grupos 1 sesiones 2
+SS707 TECNOLOGIAS INMERSIVAS grupos 1 sesiones 2
+SS708 RESEARCH PROJECT grupos 1 sesiones 1
+SS802 BASE DE DATOS AVANZADAS grupos 5 sesiones 10
+SS806 SEGURIDAD DE LA INFORMACION grupos 1 sesiones 2
+SS811 ETICA PROFESIONAL grupos 1 sesiones 1
+SS812 PROYECTO DE GRADO I grupos 1 sesiones 1
+UPC01 CATEDRA UPECISTA grupos 75 sesiones 75
+UPC08 ACTIVIDAD DEPORTIVA grupos 35 sesiones 35
+UPC09 ACTIVIDAD CULTURAL grupos 46 sesiones 46
+UPC23 CATEDRA DE LA PAZ grupos 10 sesiones 10
+UPC24 CATEDRA DE EMPRENDIMIENTO grupos 5 sesiones 5
+UPC25 CATEDRA AMBIENTAL Y DESARROLLO SOSTENIBLE grupos 7 sesiones 7

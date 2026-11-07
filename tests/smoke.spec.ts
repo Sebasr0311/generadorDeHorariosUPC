@@ -1,0 +1,210 @@
+import { test, expect } from '@playwright/test';
+
+test('landing pública, navegación y ausencia de desbordamiento horizontal', async ({ page }) => {
+  const errors:string[]=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('./');
+  await expect(page.getByRole('heading', { level: 1, name: /tu semestre/i })).toBeVisible();
+  await expect(page.getByText('De un PDF a tu horario ideal', { exact: false })).toBeVisible();
+  await expect(page.getByText('No es un sitio oficial', { exact: false })).toBeVisible();
+  const width = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(width, `Desbordamiento de ${width}px`).toBeLessThanOrEqual(2);
+  expect(errors).toEqual([]);
+});
+
+test('selección y generación de horario desde catálogo de ejemplo', async ({ page }) => {
+  const errors:string[]=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('./');
+  await page.getByRole('button', { name: /crear mi horario gratis/i }).click();
+  await expect(page.getByRole('heading', { name: /construye tu horario/i })).toBeVisible();
+  await page.getByRole('button', { name: /ESTRUCTURA DE DATOS/i }).first().click();
+  await expect(page.getByRole('heading', { name: /combinaciones disponibles/i })).toBeVisible();
+  await expect(page.getByText(/opción 1/i).first()).toBeVisible();
+  await page.getByRole('button', { name: /guardar/i }).first().click();
+  await page.getByRole('tab', { name: /guardados/i }).click();
+  await expect(page.getByText(/mi horario 2026-2/i).first()).toBeVisible();
+  const width = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(width, `Desbordamiento de ${width}px`).toBeLessThanOrEqual(2);
+  expect(errors).toEqual([]);
+});
+
+test('exportación PDF desde horario válido', async ({ page }) => {
+  await page.goto('./#planificador');
+  await page.getByRole('button', { name: /ESTRUCTURA DE DATOS/i }).first().click();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: /^PDF$/i }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/\.pdf$/);
+});
+
+test('importa un PDF Academusoft sin docentes, reconoce nuevos grupos y compara semestres', async ({ page }) => {
+  await page.goto('./#planificador');
+  await page.getByRole('button',{name:/importar PDF/i}).click();
+  await page.locator('input[type="file"]').setInputFiles('tests/fixtures/academusoft-sin-docentes.pdf');
+  await expect(page.getByRole('dialog').getByText('2', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Grupos nuevos')).toBeVisible();
+  await page.getByLabel('Período que vas a importar').fill('2027-1');
+  await page.getByRole('button', { name: /confirmar catálogo/i }).click();
+  await expect(page.getByRole('heading', { name: /construye tu horario/i })).toBeVisible();
+  await expect(page.getByText('2027-1', { exact: false }).first()).toBeVisible();
+});
+
+test('botones legibles (contraste >= 4.5 y texto visible) y sin textos o iconos superpuestos en ningún dispositivo', async ({ page }) => {
+  const checkVisualIntegrity = async () => {
+    return page.evaluate(() => {
+      const issues: string[] = [];
+
+      function parseRgba(str: string) {
+        const m = str.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+        if (!m) return { r: 255, g: 255, b: 255, a: 1 };
+        return { r: +m[1], g: +m[2], b: +m[3], a: m[4] === undefined ? 1 : +m[4] };
+      }
+
+      function blend(fg: { r: number; g: number; b: number; a: number }, bg: { r: number; g: number; b: number; a: number }) {
+        const a = fg.a + bg.a * (1 - fg.a);
+        if (a === 0) return { r: 255, g: 255, b: 255, a: 0 };
+        return {
+          r: (fg.r * fg.a + bg.r * bg.a * (1 - fg.a)) / a,
+          g: (fg.g * fg.a + bg.g * bg.a * (1 - fg.a)) / a,
+          b: (fg.b * fg.a + bg.b * bg.a * (1 - fg.a)) / a,
+          a,
+        };
+      }
+
+      function getEffectiveBg(el: Element) {
+        const chain: { bg: { r: number; g: number; b: number; a: number }; op: number }[] = [];
+        let cur: Element | null = el;
+        while (cur && cur.nodeType === 1) {
+          const cs = getComputedStyle(cur);
+          const bg = parseRgba(cs.backgroundColor);
+          const op = parseFloat(cs.opacity || '1');
+          chain.unshift({ bg, op });
+          cur = cur.parentElement;
+        }
+        let current = { r: 251, g: 252, b: 255, a: 1 };
+        for (const item of chain) {
+          current = blend({ ...item.bg, a: item.bg.a * item.op }, current);
+        }
+        return current;
+      }
+
+      function getEffectiveOpacity(el: Element) {
+        let op = 1;
+        let cur: Element | null = el;
+        while (cur && cur.nodeType === 1) {
+          op *= parseFloat(getComputedStyle(cur).opacity || '1');
+          cur = cur.parentElement;
+        }
+        return op;
+      }
+
+      function lum({ r, g, b }: { r: number; g: number; b: number }) {
+        const a = [r, g, b].map(v => {
+          v /= 255;
+          return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        });
+        return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+      }
+
+      function contrast(c1: { r: number; g: number; b: number }, c2: { r: number; g: number; b: number }) {
+        const l1 = lum(c1);
+        const l2 = lum(c2);
+        return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+      }
+
+      function isVisible(el: Element) {
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) return false;
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      }
+
+      for (const btn of document.querySelectorAll('button, a.btn-text, a.btn-primary, [role="tab"]')) {
+        if (!isVisible(btn)) continue;
+        const cs = getComputedStyle(btn);
+        const fs = parseFloat(cs.fontSize);
+        const text = ((btn as HTMLElement).innerText || btn.textContent || '').trim().replace(/\s+/g, ' ');
+        if (fs === 0 && text.length > 0) {
+          issues.push(`Texto oculto con font-size:0 en botón "${text}"`);
+        }
+        const bg = getEffectiveBg(btn);
+        const rawFg = parseRgba(cs.color);
+        const effOp = getEffectiveOpacity(btn);
+        const fg = blend({ ...rawFg, a: rawFg.a * effOp }, bg);
+        const cr = contrast(fg, bg);
+        if (cr < 4.5) {
+          issues.push(`Contraste bajo (${cr.toFixed(2)}) en botón "${text || btn.getAttribute('aria-label')}"`);
+        }
+      }
+
+      const containers = document.querySelectorAll(
+        '.calendar-event, .mock-event, .hero-visual-stack, .planner-header, .topnav, .sidebar-search, .feature-card, .step-card, .choice-control, .result-item, .saved-item, .calendar-toolbar'
+      );
+      for (const container of containers) {
+        if (!isVisible(container)) continue;
+        if (container.classList.contains('calendar-event') || container.classList.contains('mock-event')) {
+          const cr = container.getBoundingClientRect();
+          const kids = Array.from(container.children).filter(isVisible);
+          for (let i = 0; i < kids.length; i++) {
+            const r1 = kids[i].getBoundingClientRect();
+            if (r1.bottom > cr.bottom + 1.5) {
+              issues.push(`Desborde vertical en bloque de horario: "${(kids[i].textContent || '').trim()}"`);
+            }
+            for (let j = i + 1; j < kids.length; j++) {
+              const r2 = kids[j].getBoundingClientRect();
+              const xo = Math.max(0, Math.min(r1.right, r2.right) - Math.max(r1.left, r2.left));
+              const yo = Math.max(0, Math.min(r1.bottom, r2.bottom) - Math.max(r1.top, r2.top));
+              if (xo > 1 && yo > 1) {
+                issues.push(`Superposición en bloque de horario entre "${(kids[i].textContent || '').trim()}" y "${(kids[j].textContent || '').trim()}"`);
+              }
+            }
+          }
+        }
+        const children = Array.from(container.querySelectorAll('*')).filter(el => {
+          if (!isVisible(el)) return false;
+          if (el.tagName.toLowerCase() === 'svg') return true;
+          return Array.from(el.childNodes).some(n => n.nodeType === 3 && (n.textContent || '').trim().length > 0);
+        });
+        for (let i = 0; i < children.length; i++) {
+          for (let j = i + 1; j < children.length; j++) {
+            const a = children[i];
+            const b = children[j];
+            if (a.contains(b) || b.contains(a)) continue;
+            const ra = a.getBoundingClientRect();
+            const rb = b.getBoundingClientRect();
+            const xo = Math.max(0, Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left));
+            const yo = Math.max(0, Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top));
+            if (xo > 2 && yo > 2) {
+              issues.push(`Superposición en ${container.className}: "${(a.textContent || a.tagName).trim().slice(0, 20)}" sobre "${(b.textContent || b.tagName).trim().slice(0, 20)}"`);
+            }
+          }
+        }
+      }
+
+      const overflow = document.documentElement.scrollWidth - document.documentElement.clientWidth;
+      if (overflow > 1) {
+        issues.push(`Desbordamiento horizontal de ${overflow}px`);
+      }
+      return issues;
+    });
+  };
+
+  await page.goto('./');
+  expect(await checkVisualIntegrity()).toEqual([]);
+
+  await page.goto('./#planificador');
+  expect(await checkVisualIntegrity()).toEqual([]);
+
+  const rows = page.locator('.subject-row');
+  for (let i = 0; i < 5; i++) {
+    await rows.nth(i).click();
+  }
+  await expect(page.getByText(/opción 1/i).first()).toBeVisible();
+  expect(await checkVisualIntegrity()).toEqual([]);
+
+  await page.getByRole('tab', { name: /preferencias/i }).click();
+  expect(await checkVisualIntegrity()).toEqual([]);
+});
+

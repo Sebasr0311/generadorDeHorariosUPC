@@ -1,0 +1,78 @@
+name: Validar y publicar Traza
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Tipos, pruebas, compilación y responsive
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck y pruebas unitarias
+        run: npm run typecheck && npm run test
+      - name: Compilar para GitHub Pages
+        run: npm run build
+      - name: Instalar Chromium para E2E
+        run: npx playwright install --with-deps chromium
+      - name: Probar landing y planificador en navegador
+        run: npm run test:e2e
+        env:
+          CI: 'true'
+      - name: Guardar reporte Playwright ante fallos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+      - name: Guardar compilado verificado
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: traza-dist
+          path: dist/
+          retention-days: 1
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    name: Desplegar a GitHub Pages
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: traza-dist
+          path: dist/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+      - id: deployment
+        uses: actions/deploy-pages@v4

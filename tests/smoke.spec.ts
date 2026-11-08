@@ -31,8 +31,10 @@ test('módulo Mi pensum: búsqueda global, por semestre, prerrequisitos por nomb
   ).toBeVisible();
   await expect(page.getByText('El período 10 no tiene información en la fuente suministrada').first()).toBeVisible();
 
-  // Verificar vista "Todas las materias" (62 tarjetas)
-  await expect(page.locator('.pensum-course-card')).toHaveCount(62);
+  // Verificar vista "Todas las materias" (paginada de a 8 tarjetas por página, 62 totales en 8 páginas)
+  await expect(page.locator('.pensum-course-card')).toHaveCount(8);
+  await expect(page.locator('.pensum-pagination-top')).toBeVisible();
+  await expect(page.locator('.pensum-pagination-top .pensum-page-num-btn')).toHaveCount(8);
 
   // Búsqueda acento-insensible y por código para FS400 (Electromagnetismo)
   const searchInput = page.getByLabel('Buscar materia en el pensum');

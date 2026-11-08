@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -9,6 +9,8 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   Filter,
   GraduationCap,
@@ -30,6 +32,7 @@ import type {
   SemesterNumber,
 } from '../lib/types';
 import {
+  CURRICULUM_INDEX,
   CURRICULUM_METADATA,
   ROMAN_SEMESTERS,
   SEMESTER_NUMBERS,
@@ -41,7 +44,7 @@ import {
   persistPensumMode,
   reconcileCurriculumAndCatalog,
 } from '../lib/curriculum';
-import { normalizeName } from '../lib/types';
+import { SHORT_DAYS, formatHour, normalizeName } from '../lib/types';
 
 type PensumPageProps = {
   catalog: Catalog;
@@ -72,8 +75,35 @@ export function PensumPage({
   const [confirmClear, setConfirmClear] = useState(false);
   const [showUnofferedGate, setShowUnofferedGate] = useState(false);
   const [mobileTrayOpen, setMobileTrayOpen] = useState(false);
+  const [expandedCardCodes, setExpandedCardCodes] = useState<Set<string>>(() => new Set());
+  const [allModePage, setAllModePage] = useState(0);
   const [liveAnnouncement, setLiveAnnouncement] = useState('');
   const semTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const resultsMetaRef = useRef<HTMLDivElement>(null);
+
+  function toggleCardGroups(code: string) {
+    setExpandedCardCodes(prev => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      return next;
+    });
+  }
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      } else if (e.key === 'Escape' && mobileTrayOpen) {
+        setMobileTrayOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mobileTrayOpen]);
 
   const reconciled = useMemo(() => reconcileCurriculumAndCatalog(catalog), [catalog]);
   const semesterCounts = useMemo(
@@ -145,6 +175,86 @@ export function PensumPage({
     [reconciled.curriculumItems, effectiveSemesterFilter, search, mode, availabilityFilter]
   );
 
+  const ALL_MODE_PAGE_SIZE = 8;
+  const allModePageCount = Math.max(1, Math.ceil(visibleItems.length / ALL_MODE_PAGE_SIZE));
+  const safeAllModePage = Math.min(allModePage, allModePageCount - 1);
+  const displayedItems = useMemo(
+    () =>
+      mode === 'all'
+        ? visibleItems.slice(
+            safeAllModePage * ALL_MODE_PAGE_SIZE,
+            (safeAllModePage + 1) * ALL_MODE_PAGE_SIZE
+          )
+        : visibleItems,
+    [mode, visibleItems, safeAllModePage]
+  );
+
+  useEffect(() => {
+    setAllModePage(0);
+  }, [mode, search, availabilityFilter, globalSemesterFilter]);
+
+  function handleSelectAllModePage(nextPage: number, shouldScroll = false) {
+    const clamped = Math.max(0, Math.min(allModePageCount - 1, nextPage));
+    setAllModePage(clamped);
+    if (shouldScroll) {
+      resultsMetaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function renderAllModePagination(position: 'top' | 'bottom') {
+    if (mode !== 'all' || allModePageCount <= 1) return null;
+    return (
+      <nav
+        className={`pensum-pagination pensum-pagination-${position}`}
+        aria-label={
+          position === 'top'
+            ? 'Paginación superior de asignaturas en Todas las materias'
+            : 'Paginación inferior de asignaturas en Todas las materias'
+        }
+      >
+        <button
+          type="button"
+          className="btn-outline small pensum-page-nav-btn"
+          disabled={safeAllModePage === 0}
+          onClick={() => handleSelectAllModePage(safeAllModePage - 1, position === 'bottom')}
+          aria-label="Página anterior de materias"
+        >
+          <ChevronLeft size={16} />
+          <span>Anterior</span>
+        </button>
+
+        <div className="pensum-pagination-pages" role="group" aria-label="Páginas">
+          {Array.from({ length: allModePageCount }, (_, idx) => {
+            const isCurrent = idx === safeAllModePage;
+            return (
+              <button
+                key={idx}
+                type="button"
+                className={'pensum-page-num-btn' + (isCurrent ? ' active' : '')}
+                aria-current={isCurrent ? 'page' : undefined}
+                aria-label={`Ir a la página ${idx + 1} de ${allModePageCount}`}
+                onClick={() => handleSelectAllModePage(idx, position === 'bottom')}
+              >
+                {idx + 1}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          className="btn-outline small pensum-page-nav-btn"
+          disabled={safeAllModePage >= allModePageCount - 1}
+          onClick={() => handleSelectAllModePage(safeAllModePage + 1, position === 'bottom')}
+          aria-label="Página siguiente de materias"
+        >
+          <span>Siguiente</span>
+          <ChevronRight size={16} />
+        </button>
+      </nav>
+    );
+  }
+
   function handleModeChange(nextMode: PensumSelectionMode) {
     setMode(nextMode);
     persistPensumMode(nextMode);
@@ -209,6 +319,53 @@ export function PensumPage({
     (mode === 'all' && (availabilityFilter !== 'all' || globalSemesterFilter !== 'all'));
 
   const activeSemSummary = semesterCounts[String(activeSemester) as SemesterFilterValue];
+  const activeSemOfferedItems = useMemo(
+    () =>
+      reconciled.curriculumItems.filter(
+        item => item.semester === activeSemester && item.offering && item.offering.groups.length > 0
+      ),
+    [reconciled.curriculumItems, activeSemester]
+  );
+  const allActiveSemOfferedSelected =
+    activeSemOfferedItems.length > 0 &&
+    activeSemOfferedItems.every(item => selectedCodes.has(item.curriculumCode));
+
+  function handleToggleEntireSemester() {
+    if (allActiveSemOfferedSelected) {
+      for (const item of activeSemOfferedItems) {
+        if (selectedCodes.has(item.curriculumCode)) {
+          onRemoveCourse(item.curriculumCode);
+        }
+      }
+      setLiveAnnouncement(
+        `Se quitaron las materias del Semestre ${ROMAN_SEMESTERS[activeSemester]} de tu selección.`
+      );
+    } else {
+      let added = 0;
+      for (const item of activeSemOfferedItems) {
+        if (!selectedCodes.has(item.curriculumCode)) {
+          onToggleCourse(item);
+          added++;
+        }
+      }
+      setLiveAnnouncement(
+        `Se agregaron ${added} materias con grupos del Semestre ${ROMAN_SEMESTERS[activeSemester]}.`
+      );
+    }
+  }
+
+  function handleInspectPrerequisite(prereqCode: string) {
+    const target = reconciled.byCurriculumCode.get(prereqCode.toUpperCase());
+    if (mode === 'semester' && target?.semester) {
+      setActiveSemester(target.semester);
+      setSearch(prereqCode);
+    } else {
+      setGlobalSemesterFilter('all');
+      setAvailabilityFilter('all');
+      setSearch(prereqCode);
+    }
+    setLiveAnnouncement(`Filtrando prerrequisito ${prereqCode}.`);
+  }
 
   return (
     <div className="pensum-page">
@@ -337,6 +494,7 @@ export function PensumPage({
                 <label className="pensum-search-input">
                   <Search size={18} />
                   <input
+                    ref={searchInputRef}
                     type="search"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
@@ -347,7 +505,7 @@ export function PensumPage({
                     }
                     aria-label="Buscar materia en el pensum"
                   />
-                  {search && (
+                  {search ? (
                     <button
                       type="button"
                       className="pensum-search-clear"
@@ -356,6 +514,10 @@ export function PensumPage({
                     >
                       <X size={15} />
                     </button>
+                  ) : (
+                    <span className="search-kbd-hint" aria-hidden="true">
+                      ⌘ K
+                    </span>
                   )}
                 </label>
               </div>
@@ -483,30 +645,68 @@ export function PensumPage({
                         ? ` · ${selectedBySemesterCount[activeSemester]} en tu selección`
                         : ''}
                     </div>
-                    <small className="period-10-discrete-note">
-                      <Info size={13} /> {CURRICULUM_METADATA.periodo10Note} (la consulta declara{' '}
-                      {CURRICULUM_METADATA.periodosDeclarados} períodos, con detalle en 1–9).
-                    </small>
+                    <div className="pensum-active-sem-actions">
+                      {activeSemOfferedItems.length > 0 && (
+                        <button
+                          type="button"
+                          className="btn-outline small pensum-batch-sem-btn"
+                          onClick={handleToggleEntireSemester}
+                        >
+                          {allActiveSemOfferedSelected ? (
+                            <>
+                              <X size={14} /> Quitar Sem. {ROMAN_SEMESTERS[activeSemester]}
+                            </>
+                          ) : (
+                            <>
+                              <Check size={14} /> Seleccionar disponibles ({activeSemOfferedItems.length})
+                            </>
+                          )}
+                        </button>
+                      )}
+                      <small className="period-10-discrete-note">
+                        <Info size={13} /> {CURRICULUM_METADATA.periodo10Note} (la consulta declara{' '}
+                        {CURRICULUM_METADATA.periodosDeclarados} períodos, con detalle en 1–9).
+                      </small>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="pensum-results-meta">
+            <div className="pensum-results-meta" ref={resultsMetaRef}>
               <span>
-                Mostrando <strong>{visibleItems.length}</strong>{' '}
-                {visibleItems.length === 1 ? 'asignatura' : 'asignaturas'}
-                {mode === 'semester'
-                  ? ` del Semestre ${ROMAN_SEMESTERS[activeSemester]}`
-                  : globalSemesterFilter !== 'all'
-                    ? ` del Semestre ${ROMAN_SEMESTERS[Number(globalSemesterFilter) as SemesterNumber]}`
-                    : ' del pensum documentado (I–IX)'}
+                {mode === 'all' && visibleItems.length > 0 ? (
+                  <>
+                    Mostrando{' '}
+                    <strong>
+                      {safeAllModePage * ALL_MODE_PAGE_SIZE + 1}–
+                      {Math.min(visibleItems.length, (safeAllModePage + 1) * ALL_MODE_PAGE_SIZE)}
+                    </strong>{' '}
+                    de <strong>{visibleItems.length}</strong>{' '}
+                    {visibleItems.length === 1 ? 'asignatura' : 'asignaturas'}
+                    {globalSemesterFilter !== 'all'
+                      ? ` del Semestre ${ROMAN_SEMESTERS[Number(globalSemesterFilter) as SemesterNumber]}`
+                      : ' del pensum documentado (I–IX)'}
+                  </>
+                ) : (
+                  <>
+                    Mostrando <strong>{visibleItems.length}</strong>{' '}
+                    {visibleItems.length === 1 ? 'asignatura' : 'asignaturas'}
+                    {mode === 'semester'
+                      ? ` del Semestre ${ROMAN_SEMESTERS[activeSemester]}`
+                      : globalSemesterFilter !== 'all'
+                        ? ` del Semestre ${ROMAN_SEMESTERS[Number(globalSemesterFilter) as SemesterNumber]}`
+                        : ' del pensum documentado (I–IX)'}
+                  </>
+                )}
               </span>
               <span>
                 Leyenda: <strong>HT</strong> Teóricas · <strong>HP</strong> Prácticas ·{' '}
                 <strong>HTP</strong> Teórico-prácticas · <strong>Pond.</strong> Ponderación Académica
               </span>
             </div>
+
+            {renderAllModePagination('top')}
 
             {visibleItems.length === 0 ? (
               <div className="panel pensum-empty-state" role="status">
@@ -532,12 +732,15 @@ export function PensumPage({
                 </div>
               </div>
             ) : (
-              <div className="pensum-cards-grid" role="list" aria-label="Asignaturas del pensum">
-                {visibleItems.map(item => {
+              <>
+                <div className="pensum-cards-grid" role="list" aria-label="Asignaturas del pensum">
+                  {displayedItems.map(item => {
                   const isSelected = selectedCodes.has(item.curriculumCode);
                   const req = describeCourseRequirements(item);
+                  const dependents = CURRICULUM_INDEX.dependentsByCode.get(item.curriculumCode) || [];
                   const groupCount = item.offering?.groups.length || 0;
                   const isAvailable = groupCount > 0;
+                  const isGroupsOpen = expandedCardCodes.has(item.curriculumCode);
                   const normName = normalizeName(item.curriculumName);
 
                   return (
@@ -593,13 +796,19 @@ export function PensumPage({
 
                       <div className="pensum-prereq-section">
                         {req.subjectPrerequisites.map(p => (
-                          <div key={p.code} className="pensum-prereq-pill subject-prereq">
+                          <button
+                            key={p.code}
+                            type="button"
+                            className="pensum-prereq-pill subject-prereq prereq-interactive"
+                            onClick={() => handleInspectPrerequisite(p.code)}
+                            title={`Consultar prerrequisito ${p.code}`}
+                          >
                             <CheckCircle2 size={14} aria-hidden="true" />
                             <div>
                               <strong>{p.message}</strong>
                               <span className="prereq-secondary-code">({p.rawCodeLabel})</span>
                             </div>
-                          </div>
+                          </button>
                         ))}
 
                         {req.creditRequirement && (
@@ -619,7 +828,72 @@ export function PensumPage({
                             <span>Sin prerrequisito indicado</span>
                           </div>
                         )}
+
+                        {dependents.length > 0 && (
+                          <div className="pensum-unlocks-box">
+                            <span className="pensum-unlocks-label">Abre paso a:</span>
+                            <div className="pensum-unlocks-pills">
+                              {dependents.map(dep => (
+                                <button
+                                  key={dep.code}
+                                  type="button"
+                                  className="pensum-unlock-pill"
+                                  onClick={() => handleInspectPrerequisite(dep.code)}
+                                  title={`Ir a ${dep.code} · ${dep.name} (Sem. ${dep.romanSemester})`}
+                                >
+                                  <span>
+                                    {dep.name} (Sem. {dep.romanSemester})
+                                  </span>
+                                  <ArrowRight size={12} aria-hidden="true" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
+
+                      {isAvailable && item.offering && (
+                        <div className="pensum-groups-preview">
+                          <button
+                            type="button"
+                            className={'pensum-groups-preview-toggle' + (isGroupsOpen ? ' open' : '')}
+                            aria-expanded={isGroupsOpen}
+                            onClick={() => toggleCardGroups(item.curriculumCode)}
+                          >
+                            <span>
+                              {isGroupsOpen ? 'Ocultar' : 'Ver'} {groupCount}{' '}
+                              {groupCount === 1 ? 'grupo y horario' : 'grupos y horarios'}
+                            </span>
+                            <ChevronDown size={14} aria-hidden="true" />
+                          </button>
+                          {isGroupsOpen && (
+                            <div
+                              className="pensum-groups-preview-list"
+                              role="region"
+                              aria-label={`Grupos publicados de ${item.curriculumName}`}
+                            >
+                              {item.offering.groups.map(g => (
+                                <div key={g.id} className="pensum-group-preview-item">
+                                  <div className="pensum-group-preview-top">
+                                    <strong>Grupo {g.label}</strong>
+                                    <span>{g.teacher || 'Docente por confirmar'}</span>
+                                  </div>
+                                  <small>
+                                    {g.sessions.length > 0
+                                      ? g.sessions
+                                          .map(
+                                            s =>
+                                              `${SHORT_DAYS[s.day]} ${formatHour(s.start)}–${formatHour(s.end)}`
+                                          )
+                                          .join(', ')
+                                      : 'Sin horario asignado'}
+                                  </small>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {!isAvailable && (
                         <p className="pensum-unoffered-card-note">
@@ -652,7 +926,10 @@ export function PensumPage({
                     </article>
                   );
                 })}
-              </div>
+                </div>
+
+                {renderAllModePagination('bottom')}
+              </>
             )}
 
             <div className="pensum-period10-footer-card">
@@ -671,6 +948,14 @@ export function PensumPage({
             </div>
           </main>
 
+          {mobileTrayOpen && (
+            <div
+              className="pensum-tray-backdrop"
+              aria-hidden="true"
+              onClick={() => setMobileTrayOpen(false)}
+            />
+          )}
+
           <aside
             className={'pensum-tray-panel' + (mobileTrayOpen ? ' mobile-open' : '')}
             aria-label="Bandeja de materias seleccionadas"
@@ -681,7 +966,19 @@ export function PensumPage({
                   <span className="eyebrow">MI SELECCIÓN CENTRALIZADA</span>
                   <h2>Materias elegidas</h2>
                 </div>
-                <span className="selected-number">{selectedItems.length}</span>
+                <div className="pensum-tray-head-right">
+                  <span className="selected-number">{selectedItems.length}</span>
+                  {mobileTrayOpen && (
+                    <button
+                      type="button"
+                      className="icon-btn pensum-tray-close-btn"
+                      onClick={() => setMobileTrayOpen(false)}
+                      aria-label="Cerrar bandeja"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="pensum-tray-stats">
@@ -718,7 +1015,23 @@ export function PensumPage({
                           role="listitem"
                           className={'pensum-tray-item' + (!hasGroups ? ' unoffered' : '')}
                         >
-                          <div className="pensum-tray-item-info">
+                          <div
+                            className="pensum-tray-item-info clickable"
+                            role="button"
+                            tabIndex={0}
+                            title={`Localizar ${item.curriculumCode} en el catálogo`}
+                            onClick={() => {
+                              handleInspectPrerequisite(item.curriculumCode);
+                              setMobileTrayOpen(false);
+                            }}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleInspectPrerequisite(item.curriculumCode);
+                                setMobileTrayOpen(false);
+                              }
+                            }}
+                          >
                             <div className="pensum-tray-item-top">
                               <span className="pensum-tray-code">
                                 Sem. {item.romanSemester} · {item.curriculumCode}

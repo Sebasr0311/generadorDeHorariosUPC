@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -21,11 +21,16 @@ import {
   Heart,
   Info,
   Layers3,
+  LayoutGrid,
+  List,
   ListFilter,
   Menu,
+  Pencil,
+  RotateCcw,
   Search,
   ShieldCheck,
   Sparkles,
+  Trash2,
   Users,
   X,
   Zap,
@@ -675,6 +680,7 @@ function TeacherControls({
   subject,
   choice,
   onChange,
+  onRemove,
   prefs,
   catalog,
   choices,
@@ -683,6 +689,7 @@ function TeacherControls({
   subject: Subject;
   choice: Choice;
   onChange: (choice: Choice) => void;
+  onRemove: () => void;
   prefs: Preferences;
   catalog: Catalog;
   choices: Choice[];
@@ -752,7 +759,18 @@ function TeacherControls({
             {creditsLabel} · {subject.groups.length} grupos
           </small>
         </div>
-        <span className="count-chip">{compatibleCount} opciones</span>
+        <div className="choice-control-top-actions">
+          <span className="count-chip">{compatibleCount} opciones</span>
+          <button
+            type="button"
+            className="selected-chip-remove"
+            onClick={onRemove}
+            aria-label={`Quitar ${subject.name} de la selección`}
+            title="Quitar materia"
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+        </div>
       </div>
       <div className="choice-control-fields">
         <label>
@@ -930,9 +948,11 @@ function Planner({
   onImportCatalog,
   onToggleItem,
   onRemoveChoice,
+  onClearAllChoices,
   onUpdateChoice,
   onRemoveUnofferedChoices,
   onSavePlan,
+  onRenameSavedPlan,
   onLoadSavedPlan,
   onDeleteSavedPlan,
   onHome,
@@ -948,9 +968,11 @@ function Planner({
   onImportCatalog: (c: Catalog) => void;
   onToggleItem: (item: ReconciledCatalogItem) => void;
   onRemoveChoice: (code: string) => void;
+  onClearAllChoices: () => void;
   onUpdateChoice: (choice: Choice) => void;
   onRemoveUnofferedChoices: () => void;
   onSavePlan: (plan: SavedPlan) => Promise<void>;
+  onRenameSavedPlan: (id: string, nextName: string) => Promise<void>;
   onLoadSavedPlan: (plan: SavedPlan) => void;
   onDeleteSavedPlan: (id: string) => void;
   onHome: () => void;
@@ -965,6 +987,26 @@ function Planner({
   const [showDetail, setShowDetail] = useState(false);
   const [showReconcileReport, setShowReconcileReport] = useState(false);
   const [busyExport, setBusyExport] = useState<'pdf' | 'excel' | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
+  const [calendarViewMode, setCalendarViewMode] = useState<'grid' | 'agenda'>('grid');
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+  const [editingPlanName, setEditingPlanName] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const controlPanelRef = useRef<HTMLDivElement>(null);
+  const resultsPanelRef = useRef<HTMLElement>(null);
+  const calendarPanelRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const catalog = catalogs.find(c => c.id === activeId) || initial;
   const reconciled = useMemo(() => reconcileCurriculumAndCatalog(catalog), [catalog]);
@@ -1040,6 +1082,84 @@ function Planner({
   const current = computed.schedules[page * 10] || null;
   const [selectedResult, setSelectedResult] = useState(0);
   const activeSchedule = computed.schedules[selectedResult] || current;
+  const activeOptionIndex = useMemo(() => {
+    if (!activeSchedule) return 0;
+    const idx = computed.schedules.findIndex(s => s.key === activeSchedule.key);
+    return idx >= 0 ? idx : selectedResult;
+  }, [activeSchedule, computed.schedules, selectedResult]);
+
+  function selectScheduleIndex(nextIdx: number) {
+    if (computed.schedules.length === 0) return;
+    const clamped = Math.max(0, Math.min(computed.schedules.length - 1, nextIdx));
+    setSelectedResult(clamped);
+    setPage(Math.floor(clamped / 10));
+    setShowDetail(false);
+  }
+
+  useEffect(() => {
+    const onArrowNav = (e: KeyboardEvent) => {
+      if (computed.schedules.length <= 1) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = document.activeElement as HTMLElement | null;
+      if (el) {
+        const tag = el.tagName.toLowerCase();
+        if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+        if (el.getAttribute('role') === 'tab' || el.closest('[role="toolbar"]')) return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        selectScheduleIndex((activeOptionIndex + 1) % computed.schedules.length);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        selectScheduleIndex(
+          (activeOptionIndex - 1 + computed.schedules.length) % computed.schedules.length
+        );
+      }
+    };
+    window.addEventListener('keydown', onArrowNav);
+    return () => window.removeEventListener('keydown', onArrowNav);
+  }, [activeOptionIndex, computed.schedules.length]);
+
+  const activePrefCount = useMemo(
+    () =>
+      (prefs.mode !== DEFAULT_PREFERENCES.mode ? 1 : 0) +
+      (prefs.earliest !== DEFAULT_PREFERENCES.earliest ||
+      prefs.latest !== DEFAULT_PREFERENCES.latest
+        ? 1
+        : 0) +
+      (prefs.freeDays.length > 0 ? 1 : 0) +
+      (prefs.campusOnly !== DEFAULT_PREFERENCES.campusOnly ? 1 : 0) +
+      (prefs.allowUnknown !== DEFAULT_PREFERENCES.allowUnknown ? 1 : 0),
+    [prefs]
+  );
+
+  const pinnedByCode = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of offeredChoices) {
+      if (c.pinnedGroup) map.set(c.code, c.pinnedGroup);
+    }
+    return map;
+  }, [offeredChoices]);
+
+  function handleTogglePinFromCalendar(
+    subjectCode: string,
+    groupId: string,
+    subjectName: string,
+    groupLabel: string
+  ) {
+    const found = offeredChoices.find(c => c.code === subjectCode);
+    if (!found) return;
+    const isAlreadyPinned = found.pinnedGroup === groupId;
+    onUpdateChoice({
+      ...found,
+      pinnedGroup: isAlreadyPinned ? undefined : groupId,
+    });
+    setMessage(
+      isAlreadyPinned
+        ? `Se liberó el Grupo ${groupLabel} de ${subjectName}.`
+        : `Grupo ${groupLabel} de ${subjectName} fijado en tu selección.`
+    );
+  }
 
   useEffect(() => {
     setPage(0);
@@ -1067,7 +1187,10 @@ function Planner({
 
   async function saveCurrent() {
     if (!activeSchedule) return;
-    const name = `Mi horario ${catalog.term} · ${new Date().toLocaleDateString('es-CO')}`;
+    const optionIndex = computed.schedules.findIndex(s => s.key === activeSchedule.key);
+    const optNum = optionIndex >= 0 ? optionIndex + 1 : selectedResult + 1;
+    const timeRange = `${formatHour(activeSchedule.earliest)}–${formatHour(activeSchedule.latest)}`;
+    const name = `Mi horario ${catalog.term} · Opción ${optNum} (${timeRange}) · ${new Date().toLocaleDateString('es-CO')}`;
     const plan: SavedPlan = {
       id: crypto.randomUUID(),
       name,
@@ -1083,6 +1206,8 @@ function Planner({
       }),
     };
     await onSavePlan(plan);
+    setJustSaved(true);
+    window.setTimeout(() => setJustSaved(false), 2200);
   }
 
   async function exportCurrent(kind: 'pdf' | 'excel') {
@@ -1152,12 +1277,24 @@ function Planner({
             <label className="sidebar-search">
               <Search size={17} />
               <input
+                ref={searchInputRef}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar materia, código o docente"
                 aria-label="Buscar materia o docente"
               />
-              <span>⌘ K</span>
+              {search ? (
+                <button
+                  type="button"
+                  className="sidebar-search-clear"
+                  onClick={() => setSearch('')}
+                  aria-label="Borrar búsqueda"
+                >
+                  <X size={14} />
+                </button>
+              ) : (
+                <span>⌘ K</span>
+              )}
             </label>
             <SemesterFilter
               value={semester}
@@ -1225,13 +1362,28 @@ function Planner({
                 </p>
               </div>
               <div className="planner-header-stats">
-                <div>
+                <button
+                  type="button"
+                  className="planner-stat-btn"
+                  onClick={() => {
+                    setTab('courses');
+                    controlPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  title="Ir a materias elegidas"
+                >
                   <strong>
                     <CountUp to={choices.length} duration={0.6} trigger="load" />
                   </strong>
                   <span>Materias</span>
-                </div>
-                <div>
+                </button>
+                <button
+                  type="button"
+                  className="planner-stat-btn"
+                  onClick={() =>
+                    resultsPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }
+                  title="Ir a combinaciones disponibles"
+                >
                   <strong>
                     <CountUp
                       to={computed.schedules.length}
@@ -1241,13 +1393,20 @@ function Planner({
                     />
                   </strong>
                   <span>Opciones</span>
-                </div>
-                <div>
+                </button>
+                <button
+                  type="button"
+                  className="planner-stat-btn"
+                  onClick={() =>
+                    calendarPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }
+                  title="Ir al calendario semanal"
+                >
                   <strong>
                     <CountUp to={activeSchedule?.days || 0} duration={0.6} trigger="load" />
                   </strong>
                   <span>Días de clase</span>
-                </div>
+                </button>
               </div>
             </div>
 
@@ -1255,7 +1414,24 @@ function Planner({
               <div className="notice-inline" role="status">
                 <Info size={17} />
                 <span>{message}</span>
-                <button onClick={() => setMessage('')} aria-label="Cerrar aviso">
+                {message.includes('Propuesta guardada') && tab !== 'saved' && (
+                  <button
+                    type="button"
+                    className="btn-outline small notice-inline-cta"
+                    onClick={() => {
+                      setTab('saved');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  >
+                    Ver guardados ({saved.length})
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="notice-close-btn"
+                  onClick={() => setMessage('')}
+                  aria-label="Cerrar aviso"
+                >
                   <X size={15} />
                 </button>
               </div>
@@ -1302,7 +1478,12 @@ function Planner({
               </div>
             )}
 
-            <div className="page-tabs" role="tablist" aria-label="Secciones del planificador">
+            <div
+              className="page-tabs"
+              role="tablist"
+              aria-label="Secciones del planificador"
+              ref={controlPanelRef}
+            >
               <button
                 role="tab"
                 aria-selected={tab === 'courses'}
@@ -1317,7 +1498,8 @@ function Planner({
                 className={tab === 'filters' ? 'active' : ''}
                 onClick={() => setTab('filters')}
               >
-                <ListFilter size={16} /> Preferencias
+                <ListFilter size={16} /> Preferencias{' '}
+                {activePrefCount > 0 && <span>{activePrefCount}</span>}
               </button>
               <button
                 role="tab"
@@ -1339,8 +1521,19 @@ function Planner({
                       incluiremos todas las opciones posibles.
                     </p>
                   </div>
-                  <div className="section-bubble">
-                    <Users size={17} />
+                  <div className="panel-heading-actions">
+                    {choices.length > 0 && (
+                      <button
+                        type="button"
+                        className="btn-outline small"
+                        onClick={onClearAllChoices}
+                      >
+                        <Trash2 size={14} /> Limpiar selección
+                      </button>
+                    )}
+                    <div className="section-bubble">
+                      <Users size={17} />
+                    </div>
                   </div>
                 </div>
                 {selected.length === 0 ? (
@@ -1369,6 +1562,7 @@ function Planner({
                         subject={s}
                         choice={offeredChoices.find(x => x.code === s.code)!}
                         onChange={onUpdateChoice}
+                        onRemove={() => onRemoveChoice(s.code)}
                         prefs={prefs}
                         catalog={catalog}
                         choices={offeredChoices}
@@ -1395,8 +1589,19 @@ function Planner({
                       resultados válidos.
                     </p>
                   </div>
-                  <div className="section-bubble">
-                    <ListFilter size={17} />
+                  <div className="panel-heading-actions">
+                    {activePrefCount > 0 && (
+                      <button
+                        type="button"
+                        className="btn-outline small"
+                        onClick={() => setPrefs(DEFAULT_PREFERENCES)}
+                      >
+                        <RotateCcw size={14} /> Restablecer reglas
+                      </button>
+                    )}
+                    <div className="section-bubble">
+                      <ListFilter size={17} />
+                    </div>
                   </div>
                 </div>
                 <div className="preference-grid">
@@ -1530,38 +1735,105 @@ function Planner({
                 </div>
                 {saved.length ? (
                   <div className="saved-list">
-                    {saved.map(p => (
-                      <div key={p.id} className="saved-item">
-                        <span className="saved-icon">
-                          <CalendarDays size={18} />
-                        </span>
-                        <div>
-                          <strong>{p.name}</strong>
-                          <small>
-                            {p.items.length} materias ·{' '}
-                            {catalogs.find(c => c.id === p.catalogId)?.label ||
-                              'Catálogo no disponible'}
-                            {p.catalogId !== activeId ? ' · Otro catálogo' : ''}
-                          </small>
+                    {saved.map(p => {
+                      const groupPills = p.items
+                        .map(item => {
+                          const code = item.curriculumCode || item.code;
+                          const grp =
+                            item.groupId.split('::')[1]?.split('-')[0]?.trim() || item.groupId;
+                          return `${code}(${grp})`;
+                        })
+                        .join(' · ');
+                      const isEditing = editingPlanId === p.id;
+                      return (
+                        <div key={p.id} className="saved-item">
+                          <span className="saved-icon">
+                            <CalendarDays size={18} />
+                          </span>
+                          <div className="saved-item-body">
+                            {isEditing ? (
+                              <form
+                                className="saved-rename-form"
+                                onSubmit={e => {
+                                  e.preventDefault();
+                                  const trimmed = editingPlanName.trim();
+                                  if (trimmed) {
+                                    void onRenameSavedPlan(p.id, trimmed);
+                                  }
+                                  setEditingPlanId(null);
+                                }}
+                              >
+                                <input
+                                  type="text"
+                                  className="saved-rename-input"
+                                  value={editingPlanName}
+                                  onChange={e => setEditingPlanName(e.target.value)}
+                                  aria-label="Nuevo nombre del horario guardado"
+                                  autoFocus
+                                />
+                                <button type="submit" className="btn-primary small">
+                                  Guardar
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-outline small"
+                                  onClick={() => setEditingPlanId(null)}
+                                >
+                                  Cancelar
+                                </button>
+                              </form>
+                            ) : (
+                              <strong>{p.name}</strong>
+                            )}
+                            <small>
+                              {p.items.length} materias ·{' '}
+                              {catalogs.find(c => c.id === p.catalogId)?.label ||
+                                'Catálogo no disponible'}
+                              {p.catalogId !== activeId ? ' · Otro catálogo' : ''}
+                            </small>
+                            {groupPills && (
+                              <small className="saved-groups-summary">{groupPills}</small>
+                            )}
+                          </div>
+                          {!isEditing && (
+                            <button
+                              type="button"
+                              className="icon-btn"
+                              aria-label={`Renombrar ${p.name}`}
+                              title="Cambiar nombre"
+                              onClick={() => {
+                                setEditingPlanId(p.id);
+                                setEditingPlanName(p.name);
+                              }}
+                            >
+                              <Pencil size={15} />
+                            </button>
+                          )}
+                          <button
+                            className="btn-outline small"
+                            onClick={() => {
+                              onLoadSavedPlan(p);
+                              setTab('courses');
+                              window.setTimeout(() => {
+                                calendarPanelRef.current?.scrollIntoView({
+                                  behavior: 'smooth',
+                                  block: 'start',
+                                });
+                              }, 80);
+                            }}
+                          >
+                            Abrir
+                          </button>
+                          <button
+                            className="icon-btn"
+                            aria-label={`Eliminar ${p.name}`}
+                            onClick={() => onDeleteSavedPlan(p.id)}
+                          >
+                            <X size={17} />
+                          </button>
                         </div>
-                        <button
-                          className="btn-outline small"
-                          onClick={() => {
-                            onLoadSavedPlan(p);
-                            setTab('courses');
-                          }}
-                        >
-                          Abrir
-                        </button>
-                        <button
-                          className="icon-btn"
-                          aria-label={`Eliminar ${p.name}`}
-                          onClick={() => onDeleteSavedPlan(p.id)}
-                        >
-                          <X size={17} />
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="selection-empty">
@@ -1573,7 +1845,7 @@ function Planner({
               </section>
             )}
 
-            <section className="panel results-panel">
+            <section className="panel results-panel" ref={resultsPanelRef}>
               <div className="results-heading">
                 <div>
                   <div className="eyebrow">EXPLORA TUS OPCIONES</div>
@@ -1589,30 +1861,86 @@ function Planner({
                   </p>
                 </div>
                 {computed.schedules.length > 0 && (
-                  <span className="result-count">
-                    <CountUp
-                      to={computed.schedules.length}
-                      suffix={`${computed.truncated ? '+' : ''} resultados`}
-                      duration={0.6}
-                      trigger="load"
-                    />
-                  </span>
+                  <div className="results-heading-actions">
+                    <span className="result-count">
+                      <CountUp
+                        to={computed.schedules.length}
+                        suffix={`${computed.truncated ? '+' : ''} resultados`}
+                        duration={0.6}
+                        trigger="load"
+                      />
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-outline small"
+                      onClick={() =>
+                        calendarPanelRef.current?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start',
+                        })
+                      }
+                    >
+                      <CalendarDays size={15} /> Ir al calendario
+                    </button>
+                  </div>
                 )}
               </div>
               {computed.infeasible && (
-                <p className="tiny-alert">
-                  Revisa las materias {computed.problemSubjects.join(', ')}. Ningún grupo satisface
-                  los filtros actuales.
-                </p>
+                <div className="tiny-alert-box">
+                  <p className="tiny-alert">
+                    Revisa las materias {computed.problemSubjects.join(', ')}. Ningún grupo
+                    satisface los filtros actuales.
+                  </p>
+                  {activePrefCount > 0 && (
+                    <div className="tiny-alert-actions">
+                      <button
+                        type="button"
+                        className="btn-outline small"
+                        onClick={() => setPrefs(DEFAULT_PREFERENCES)}
+                      >
+                        <RotateCcw size={14} /> Restablecer preferencias ({activePrefCount})
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-outline small"
+                        onClick={() => {
+                          setTab('filters');
+                          controlPanelRef.current?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start',
+                          });
+                        }}
+                      >
+                        <ListFilter size={14} /> Ajustar preferencias
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
               {conflictMessages.length > 0 && (
-                <div className="tiny-alert" role="alert">
-                  <strong>Cruce de horario detectado:</strong> {conflictMessages.join(' ')}
+                <div className="tiny-alert-box" role="alert">
+                  <div className="tiny-alert">
+                    <strong>Cruce de horario detectado:</strong> {conflictMessages.join(' ')}
+                  </div>
+                  {activePrefCount > 0 && (
+                    <div className="tiny-alert-actions">
+                      <button
+                        type="button"
+                        className="btn-outline small"
+                        onClick={() => setPrefs(DEFAULT_PREFERENCES)}
+                      >
+                        <RotateCcw size={14} /> Restablecer preferencias ({activePrefCount})
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
               <div className="result-list">
                 {displayed.map((result, i) => {
                   const index = page * 10 + i;
+                  const groupSummary = result.groups
+                    .map(g => `${g.code}(${g.group.label.split('-')[0].trim()})`)
+                    .join(' · ');
                   return (
                     <button
                       className={
@@ -1632,6 +1960,7 @@ function Planner({
                           {result.groups.length} materias · {result.days} días de clase ·{' '}
                           {Math.round((result.gaps / 60) * 10) / 10} h de huecos
                         </small>
+                        <small className="result-groups-summary">{groupSummary}</small>
                       </span>
                       <span className="result-time">
                         <Clock3 size={14} />
@@ -1711,7 +2040,7 @@ function Planner({
               )}
             </section>
 
-            <section className="panel calendar-panel">
+            <section className="panel calendar-panel" ref={calendarPanelRef}>
               <div className="calendar-toolbar">
                 <div className="toolbar-title">
                   <span className="section-bubble blue">
@@ -1721,7 +2050,7 @@ function Planner({
                     <h2>Tu calendario semanal</h2>
                     <p>
                       {activeSchedule
-                        ? `${activeSchedule.days} días con clase · ${Math.round((activeSchedule.gaps / 60) * 10) / 10} horas libres entre clases`
+                        ? `Opción ${activeOptionIndex + 1} · ${activeSchedule.days} días con clase · ${Math.round((activeSchedule.gaps / 60) * 10) / 10} horas libres entre clases`
                         : 'Una vista clara de tu semana, de lunes a domingo'}
                     </p>
                   </div>
@@ -1732,9 +2061,18 @@ function Planner({
                     onClick={() => {
                       void saveCurrent();
                     }}
-                    className="btn-outline small"
+                    className={'btn-outline small' + (justSaved ? ' saved-pulse' : '')}
+                    aria-label="Guardar horario actual"
                   >
-                    <Heart size={15} /> Guardar
+                    {justSaved ? (
+                      <>
+                        <Check size={15} /> Guardado
+                      </>
+                    ) : (
+                      <>
+                        <Heart size={15} /> Guardar
+                      </>
+                    )}
                   </button>
                   <button
                     disabled={!activeSchedule || !!busyExport}
@@ -1756,6 +2094,64 @@ function Planner({
                   </button>
                 </div>
               </div>
+              {activeSchedule && computed.schedules.length > 0 && (
+                <div className="calendar-subtoolbar">
+                  <div className="calendar-option-stepper">
+                    <button
+                      type="button"
+                      className="btn-outline small"
+                      disabled={activeOptionIndex <= 0}
+                      onClick={() => selectScheduleIndex(activeOptionIndex - 1)}
+                      aria-label="Opción de horario anterior"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span className="calendar-option-indicator">
+                      <strong>
+                        Opción {activeOptionIndex + 1} de {computed.schedules.length}
+                      </strong>
+                      <small>
+                        {formatHour(activeSchedule.earliest)}–{formatHour(activeSchedule.latest)}
+                      </small>
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-outline small"
+                      disabled={activeOptionIndex >= computed.schedules.length - 1}
+                      onClick={() => selectScheduleIndex(activeOptionIndex + 1)}
+                      aria-label="Siguiente opción de horario"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                  <div
+                    className="calendar-view-toggle"
+                    role="group"
+                    aria-label="Modo de visualización del calendario"
+                  >
+                    <button
+                      type="button"
+                      className={'calendar-view-btn' + (calendarViewMode === 'grid' ? ' active' : '')}
+                      aria-pressed={calendarViewMode === 'grid'}
+                      onClick={() => setCalendarViewMode('grid')}
+                    >
+                      <LayoutGrid size={14} />
+                      <span>Cuadrícula</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={
+                        'calendar-view-btn' + (calendarViewMode === 'agenda' ? ' active' : '')
+                      }
+                      aria-pressed={calendarViewMode === 'agenda'}
+                      onClick={() => setCalendarViewMode('agenda')}
+                    >
+                      <List size={14} />
+                      <span>Agenda por día</span>
+                    </button>
+                  </div>
+                </div>
+              )}
               {unknownSelected > 0 && (
                 <div className="estimate-banner">
                   <Info size={16} />
@@ -1768,13 +2164,18 @@ function Planner({
                   </span>
                 </div>
               )}
-              <WeeklyCalendar schedule={activeSchedule} />
+              <WeeklyCalendar
+                schedule={activeSchedule}
+                viewMode={calendarViewMode}
+                pinnedByCode={pinnedByCode}
+                onTogglePinGroup={handleTogglePinFromCalendar}
+              />
               <div className="calendar-foot">
                 <span>
                   <span className="legend-dot blue-dot" /> Clases seleccionadas
                 </span>
                 <span>
-                  <span className="legend-dot mint-dot" /> Un grupo por materia
+                  <span className="legend-dot mint-dot" /> Clic en un bloque para fijar su grupo 📌
                 </span>
                 <span>
                   <span className="legend-dot orange-dot" /> Profesores por verificar en detalles
@@ -1850,13 +2251,31 @@ function Planner({
         </div>
 
         <div className="mobile-selection-bar">
-          <span>
-            <strong>{choices.length}</strong> materias
-          </span>
-          <span>{computed.schedules.length} combinaciones</span>
-          <button onClick={() => setTab('filters')}>
-            Filtros <ListFilter size={15} />
-          </button>
+          <div className="mobile-selection-summary">
+            <strong>{choices.length} materias</strong>
+            <span>{computed.schedules.length} combinaciones</span>
+          </div>
+          <div className="mobile-selection-actions">
+            <button
+              type="button"
+              className="btn-outline small"
+              onClick={() => {
+                setTab('filters');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              Filtros <ListFilter size={14} />
+            </button>
+            <button
+              type="button"
+              className="btn-primary small"
+              onClick={() =>
+                resultsPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            >
+              Ver horarios <ArrowRight size={14} />
+            </button>
+          </div>
         </div>
         {activePlanChanges > 0 && (
           <div className="sr-only">
@@ -2037,6 +2456,19 @@ export default function App() {
     }
   }
 
+  async function handleRenameSavedPlan(id: string, nextName: string) {
+    const existing = saved.find(p => p.id === id);
+    if (!existing) return;
+    const updated: SavedPlan = { ...existing, name: nextName };
+    setSaved(all => all.map(p => (p.id === id ? updated : p)));
+    try {
+      await savePlan(updated);
+      setMessage('Nombre del horario actualizado.');
+    } catch {
+      setMessage('No fue posible actualizar el nombre en el almacenamiento local.');
+    }
+  }
+
   function handleLoadSavedPlan(plan: SavedPlan) {
     const c = catalogs.find(x => x.id === plan.catalogId);
     if (!c) {
@@ -2092,9 +2524,11 @@ export default function App() {
         onImportCatalog={handleImportCatalog}
         onToggleItem={handleToggleCourse}
         onRemoveChoice={handleRemoveCourse}
+        onClearAllChoices={handleClearAllCourses}
         onUpdateChoice={handleUpdateChoice}
         onRemoveUnofferedChoices={handleRemoveUnofferedCourses}
         onSavePlan={handleSavePlan}
+        onRenameSavedPlan={handleRenameSavedPlan}
         onLoadSavedPlan={handleLoadSavedPlan}
         onDeleteSavedPlan={handleDeleteSavedPlan}
         onHome={() => navigate('landing')}

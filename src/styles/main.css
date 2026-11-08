@@ -3961,3 +3961,1160 @@ button:disabled,
     animation: none;
   }
 }
+
+/* ==========================================================================
+   Módulo «Mi pensum» + Sección en Landing + Alertas en Planificador
+   ========================================================================== */
+
+.btn-outline.big {
+  padding: 16px 22px;
+  border-radius: 14px;
+  font-size: 14px;
+}
+
+.pensum-landing-section {
+  padding-top: 64px;
+  padding-bottom: 16px;
+}
+
+.pensum-landing-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr);
+  gap: 28px;
+  align-items: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 22px;
+  padding: 36px 38px;
+  background: linear-gradient(130deg, #eff6ff 0%, #f8fafc 60%, #ffffff 100%);
+  box-shadow: 0 12px 32px rgba(37, 84, 216, 0.06);
+}
+
+.pensum-landing-copy h2 {
+  font-size: clamp(24px, 3vw, 36px);
+  line-height: 1.22;
+  margin: 10px 0 14px;
+  color: #0f172a;
+}
+
+.pensum-landing-copy p {
+  font-size: 14px;
+  line-height: 1.75;
+  color: #334155;
+  margin: 0 0 18px;
+}
+
+.pensum-landing-highlights {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 22px;
+}
+
+.pensum-landing-highlights span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.pensum-landing-highlights svg {
+  color: #047857;
+  flex-shrink: 0;
+}
+
+.pensum-landing-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pensum-landing-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pensum-preview-pill {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid #2554d8;
+  border-radius: 12px;
+  padding: 13px 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.pensum-preview-pill.second {
+  border-left-color: #d97706;
+}
+
+.pensum-preview-pill.third {
+  border-left-color: #059669;
+}
+
+.pensum-preview-pill strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.pensum-preview-pill small {
+  display: block;
+  font-size: 11px;
+  color: #475569;
+  line-height: 1.45;
+}
+
+/* Página «Mi pensum» */
+.pensum-page {
+  min-height: 100vh;
+  background: #f6f8fc;
+  padding-bottom: 64px;
+}
+
+.pensum-container {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 28px clamp(14px, 2.6vw, 40px) 48px;
+}
+
+.pensum-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+  gap: 24px;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dbe3ef;
+  border-radius: 18px;
+  padding: 26px 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+}
+
+.pensum-hero-copy h1 {
+  font-size: clamp(24px, 2.8vw, 34px);
+  line-height: 1.2;
+  margin: 8px 0 10px;
+  color: #0f172a;
+}
+
+.pensum-hero-copy h1 span {
+  color: var(--blue);
+}
+
+.pensum-hero-copy p {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #475569;
+  margin: 0;
+}
+
+.pensum-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pensum-metric-card {
+  background: #f8fafc;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  padding: 13px 15px;
+  min-width: 0;
+}
+
+.pensum-metric-card strong {
+  display: block;
+  font-family: Manrope, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+.pensum-metric-card span {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 2px;
+}
+
+.pensum-metric-card small {
+  display: block;
+  font-size: 10.5px;
+  color: #475569;
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+.pensum-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 350px;
+  gap: 22px;
+  align-items: start;
+}
+
+.pensum-catalog-column {
+  min-width: 0;
+}
+
+.pensum-controls-card {
+  background: #ffffff;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+}
+
+.pensum-mode-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.pensum-mode-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pensum-mode-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 15px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.pensum-mode-tab:hover:not(.active) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.pensum-mode-tab.active {
+  background: var(--blue);
+  border-color: var(--blue-dark);
+  color: #ffffff;
+}
+
+.pensum-mode-tab small {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.pensum-mode-tab.active small {
+  background: #1e3a8a;
+  color: #ffffff;
+}
+
+.pensum-search-row {
+  margin-bottom: 14px;
+}
+
+.pensum-search-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 11px;
+  background: #ffffff;
+  padding: 0 13px;
+  min-height: 44px;
+  color: #475569;
+}
+
+.pensum-search-input:focus-within {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37, 84, 216, 0.12);
+}
+
+.pensum-search-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  font-size: 13px;
+  color: #0f172a;
+  background: transparent;
+}
+
+.pensum-search-input input::placeholder {
+  color: #64748b;
+}
+
+.pensum-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 4px;
+  border-radius: 7px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.pensum-all-filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pensum-availability-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.pensum-filter-pill {
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: 9px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.pensum-filter-pill:hover:not(.active) {
+  background: #e2e8f0;
+}
+
+.pensum-filter-pill.active {
+  background: #1e3a8a;
+  border-color: #1e3a8a;
+  color: #ffffff;
+}
+
+.pensum-optional-sem-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.pensum-optional-sem-select select,
+.pensum-mobile-sem-select select {
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pensum-semester-nav {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 14px;
+}
+
+.pensum-semester-nav-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pensum-semester-tabs {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+.pensum-sem-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  min-height: 52px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  text-align: left;
+}
+
+.pensum-sem-tab:hover:not(.active) {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.pensum-sem-tab.active {
+  background: var(--blue);
+  border-color: var(--blue-dark);
+  color: #ffffff;
+}
+
+.pensum-sem-tab-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 4px;
+}
+
+.pensum-sem-tab strong {
+  font-size: 12px;
+  font-weight: 800;
+  color: inherit;
+}
+
+.pensum-sem-tab small {
+  font-size: 10px;
+  color: #475569;
+  font-weight: 700;
+}
+
+.pensum-sem-tab.active small {
+  color: #ffffff;
+}
+
+.pensum-sem-selected-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: #065f46;
+  color: #ffffff;
+}
+
+.pensum-sem-tab.active .pensum-sem-selected-badge {
+  background: #ffffff;
+  color: #1e3a8a;
+}
+
+.pensum-active-sem-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  font-size: 12px;
+  color: #1e3a8a;
+}
+
+.period-10-discrete-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.pensum-results-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #334155;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.pensum-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.pensum-course-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #dbe3ef;
+  border-radius: 14px;
+  padding: 16px 18px;
+  min-width: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pensum-course-card.selected {
+  border-color: var(--blue);
+  background: #f8faff;
+  box-shadow: 0 0 0 1px var(--blue);
+}
+
+.pensum-course-card.unoffered {
+  border-style: dashed;
+  border-color: #94a3b8;
+}
+
+.pensum-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pensum-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.pensum-code-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #1e293b;
+  color: #ffffff;
+}
+
+.pensum-sem-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.pensum-weight-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+.pensum-unoffered-status {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.pensum-course-title {
+  font-size: 14.5px;
+  line-height: 1.35;
+  color: #0f172a;
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.pensum-course-alias {
+  display: block;
+  font-size: 11px;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.pensum-hours-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin: 8px 0 10px;
+}
+
+.pensum-hours-strip b {
+  color: #0f172a;
+}
+
+.pensum-prereq-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.pensum-prereq-pill {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.pensum-prereq-pill svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pensum-prereq-pill.subject-prereq {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+}
+
+.pensum-prereq-pill.subject-prereq strong {
+  color: #1e3a8a;
+  display: block;
+}
+
+.pensum-prereq-pill.credit-prereq {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+}
+
+.pensum-prereq-pill.credit-prereq strong {
+  color: #92400e;
+  display: block;
+}
+
+.pensum-prereq-pill.no-prereq {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-weight: 600;
+}
+
+.prereq-secondary-code {
+  display: inline-block;
+  font-size: 10.5px;
+  color: #334155;
+  margin-top: 2px;
+  font-weight: 700;
+}
+
+.pensum-unoffered-card-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #9a3412;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 7px 9px;
+  margin: 0 0 12px;
+}
+
+.pensum-unoffered-card-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.pensum-card-footer {
+  margin-top: auto;
+}
+
+.pensum-select-btn {
+  width: 100%;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 9px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 12px;
+}
+
+.pensum-select-btn:hover:not(.active) {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e3a8a;
+}
+
+.pensum-select-btn.active {
+  background: var(--blue);
+  border-color: var(--blue-dark);
+  color: #ffffff;
+}
+
+.pensum-period10-footer-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px 18px;
+  background: #ffffff;
+  border: 1px solid #dbe3ef;
+  border-radius: 14px;
+  color: #334155;
+}
+
+.pensum-period10-footer-card svg {
+  color: var(--blue);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.pensum-period10-footer-card strong {
+  display: block;
+  font-size: 13px;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.pensum-period10-footer-card p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #475569;
+  margin: 0;
+}
+
+.pensum-empty-state {
+  text-align: center;
+  padding: 38px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.pensum-empty-state svg {
+  color: var(--blue);
+}
+
+.pensum-empty-state h3 {
+  font-size: 16px;
+  margin: 4px 0 0;
+}
+
+.pensum-empty-state p {
+  font-size: 12.5px;
+  color: #475569;
+  max-width: 400px;
+  margin: 0 0 8px;
+}
+
+/* Bandeja lateral de selección en Mi pensum */
+.pensum-tray-panel {
+  position: sticky;
+  top: 86px;
+  min-width: 0;
+}
+
+.pensum-tray-card {
+  background: #ffffff;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  padding: 20px 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.pensum-tray-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.pensum-tray-head h2 {
+  font-size: 18px;
+  margin: 4px 0 0;
+}
+
+.pensum-tray-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  padding: 10px 8px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.pensum-tray-stats strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+.pensum-tray-stats span {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #475569;
+  margin-top: 2px;
+}
+
+.pensum-tray-empty {
+  text-align: center;
+  padding: 26px 12px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.pensum-tray-empty svg {
+  color: var(--blue);
+  margin-bottom: 8px;
+}
+
+.pensum-tray-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 3px;
+  margin-bottom: 14px;
+}
+
+.pensum-tray-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+}
+
+.pensum-tray-item.unoffered {
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
+.pensum-tray-item-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.pensum-tray-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.pensum-tray-code {
+  font-size: 10px;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+.pensum-tray-weight {
+  font-size: 10px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.pensum-tray-item-info strong {
+  display: block;
+  font-size: 11.5px;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pensum-tray-item-info small {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.pensum-tray-item-info small.avail-ok {
+  color: #065f46;
+}
+
+.pensum-tray-item-info small.avail-warn {
+  color: #9a3412;
+}
+
+.pensum-unoffered-alert {
+  background: #fff7ed;
+  border: 1px solid #fb923c;
+  border-radius: 11px;
+  padding: 11px 12px;
+  margin-bottom: 14px;
+  color: #7c2d12;
+}
+
+.pensum-unoffered-alert-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  margin-bottom: 5px;
+}
+
+.pensum-unoffered-alert p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #7c2d12;
+  margin: 0;
+}
+
+.pensum-unoffered-gate-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.pensum-tray-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.pensum-cta-build {
+  width: 100%;
+  justify-content: center;
+  min-height: 42px;
+}
+
+.pensum-clear-trigger {
+  width: 100%;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 9px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.pensum-clear-trigger:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.pensum-clear-confirm {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+}
+
+.pensum-clear-confirm span {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #991b1b;
+  margin-bottom: 8px;
+}
+
+.pensum-clear-confirm-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.btn-danger-confirm {
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #b91c1c;
+  background: #b91c1c;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.pensum-mobile-bar {
+  display: none;
+}
+
+.planner-unoffered-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  background: #fff7ed;
+  border: 1px solid #fb923c;
+  border-radius: 13px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  color: #7c2d12;
+}
+
+.planner-unoffered-banner > svg {
+  color: #c2410c;
+  flex-shrink: 0;
+}
+
+.planner-unoffered-banner-copy {
+  flex: 1;
+  min-width: 220px;
+}
+
+.planner-unoffered-banner-copy strong {
+  display: block;
+  font-size: 13px;
+  color: #7c2d12;
+  margin-bottom: 4px;
+}
+
+.planner-unoffered-banner-copy p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #7c2d12;
+  margin: 0;
+}
+
+.planner-unoffered-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 1150px) {
+  .pensum-hero {
+    grid-template-columns: 1fr;
+  }
+  .pensum-workspace {
+    grid-template-columns: 1fr;
+  }
+  .pensum-tray-panel {
+    position: relative;
+    top: auto;
+  }
+  .pensum-semester-tabs {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .pensum-sem-tab {
+    flex-shrink: 0;
+    min-width: 108px;
+  }
+  .pensum-mobile-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #ffffff;
+    border-top: 1px solid #cbd5e1;
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
+  }
+  .pensum-mobile-bar-summary strong {
+    display: block;
+    font-size: 12px;
+    color: #0f172a;
+  }
+  .pensum-mobile-bar-summary span {
+    font-size: 11px;
+    color: #475569;
+    font-weight: 700;
+  }
+  .pensum-mobile-bar-actions {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 900px) {
+  .pensum-landing-card {
+    grid-template-columns: 1fr;
+    padding: 26px 22px;
+  }
+  .pensum-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .nav-actions .btn-outline.small {
+    display: none;
+  }
+  .pensum-container {
+    padding: 18px 12px 32px;
+  }
+  .pensum-hero {
+    padding: 18px 16px;
+  }
+  .pensum-metrics-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .pensum-controls-card {
+    padding: 14px 12px;
+  }
+  .pensum-mode-tabs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .pensum-mode-tab {
+    justify-content: center;
+    padding: 8px 8px;
+    font-size: 11.5px;
+  }
+  .pensum-course-card {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 390px) {
+  .pensum-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  .pensum-mode-tab small {
+    display: none;
+  }
+  .pensum-mobile-bar {
+    padding: 8px 10px;
+  }
+  .pensum-mobile-bar-actions button {
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+}
+

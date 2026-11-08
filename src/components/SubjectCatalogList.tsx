@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react';
-import { ROMAN_SEMESTERS } from '../lib/curriculum';
+import { ROMAN_SEMESTERS, describeCourseRequirements } from '../lib/curriculum';
 import {
   normalizeName,
   type ReconciledCatalogItem,
@@ -95,6 +95,7 @@ export function SubjectCatalogList({
         }
 
         // Unoffered curriculum subject (MissingOfferingState)
+        const reqInfo = describeCourseRequirements(item);
         return (
           <button
             key={item.id}
@@ -110,7 +111,8 @@ export function SubjectCatalogList({
             <span className="subject-text">
               <strong>{item.curriculumName}</strong>
               <small>
-                Sem. {item.romanSemester} · {item.curriculumCode} · {item.credits} cr. · {item.area}
+                Sem. {item.romanSemester} · {item.curriculumCode} · {item.credits} cr. ·{' '}
+                {reqInfo.primaryMessage}
               </small>
               <small className="missing-offering-note">
                 Sin grupos publicados / No disponible para este período

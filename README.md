@@ -1,110 +1,96 @@
-# Traza — Planificador inteligente de horarios UPC
+# Traza — Planificador inteligente de horarios y pensum UPC
 
-**Traza** es una aplicación web estática para planear el semestre en Ingeniería de Sistemas de la Universidad Popular del Cesar. No es un producto oficial de la UPC y no matricula asignaturas. Está diseñada para publicarse en **GitHub Pages**, sin backend ni base de datos externa.
+**Traza** es una aplicación web estática para explorar la malla curricular y planear el semestre en Ingeniería de Sistemas de la Universidad Popular del Cesar (Jornada Única). No es un producto oficial de la UPC y no matricula asignaturas. Está diseñada para publicarse en **GitHub Pages**, sin backend ni base de datos externa.
 
 ## Funciones incluidas
 
-- Landing pública con guía de uso, preguntas frecuentes y animaciones ligeras inspiradas en el catálogo gratuito de [React Bits](https://reactbits.dev/).
-- **Malla curricular oficial integrada** (`src/data/PENSUM_INGENIERIA_SISTEMAS_UPC.txt`): **9 semestres (I–IX), 62 asignaturas y 155 créditos**, diferenciando explícitamente el *semestre del pensum* (`I`–`IX`) del *período académico del horario* (`2026-2`).
-- **Filtro por semestre curricular (`Todos`, `I`–`IX`, `Otras`)** con conteo de materias y créditos por semestre, resumen persistente de materias seleccionadas entre distintos semestres y soporte para URL (`?semestre=III`) y almacenamiento local.
-- **Conciliación explícita malla ↔ oferta de horarios** (`src/lib/curriculum.ts`): vincula asignaturas por coincidencia exacta de código+nombre o equivalencias auditadas, previniendo colisiones de códigos entre malla y PDF (ej. `SS802` es *Gestión de Proyectos TI* en malla Sem. VIII, pero *Base de Datos Avanzadas* en el PDF `2026-2`, que corresponde a `SS503` en Sem. V). Las materias del pensum sin oferta en el período actual permanecen visibles como *Sin grupos publicados / No disponible para este período*.
-- Catálogo inicial de **53 materias ofertadas, 512 grupos y 770 sesiones** obtenido del horario `2026-2` de Academusoft. Los nombres docentes se relacionan con identificadores **opacos**; no se incluyen números de identificación en el JSON publicado.
-- Búsqueda por materia, código (de malla o de horario) y docente, en intersección con el filtro de semestre. Selección de varias materias de cualquier semestre; elección fija de grupo; filtros por docente para cada materia.
-- Búsqueda de combinaciones sin solapamientos usando **grupos completos**, con horarios preferidos, límites de franja, días libres y exclusión opcional de sedes/virtualidad.
-- Calendario semanal, detalles, guardado local y exportación a **PDF** y **Excel** con grupos, docentes, estado de la asignación y salones.
-- Importación de PDF de Academusoft en el navegador (sin subir documentos a servidores) y de respaldos JSON/HTML propios de Traza.
-- Comparación entre el catálogo nuevo y el anterior: grupos nuevos, eliminados, reprogramados, cambios de aula o docente.
-- Estimación de profesor **únicamente** cuando coinciden materia, identificador de grupo y **todos** los encuentros semanales. Se muestra como estimación y jamás como oficial. Para nuevos grupos o franjas cambiadas, docente *por confirmar*.
-- Almacenamiento local con IndexedDB; las propuestas guardadas no se sincronizan entre navegadores o dispositivos.
+- **Landing pública** con sección dedicada al módulo curricular («Explora el pensum, elige materias y genera horarios»), guía de uso, preguntas frecuentes y accesos directos a **Mi pensum** (`#pensum`) y al **Planificador** (`#planificador`).
+- **Módulo «Mi pensum» (`#pensum`)** alimentado por la fuente estructurada oficial de Academusoft (`src/data/PENSUM_UPC_DATOS.json` y `src/data/PENSUM_COMPLETO_ING_SISTEMAS_UPC.txt`):
+  - **62 asignaturas documentadas** en los períodos **1 a 9 (I–IX)** y **155 unidades de Ponderación Académica** (utilizadas como créditos para sumatoria).
+  - **Dos vías de selección sincronizadas y equivalentes**:
+    1. **«Todas las materias»**: catálogo global con búsqueda instantánea insensible a tildes y mayúsculas por nombre o código (p. ej. `electromagnetismo`, `ELECTROMAGNETISMO` o `FS400`), más filtros opcionales por disponibilidad de grupos y semestre.
+    2. **«Por semestre»**: navegación accesible por teclado y móvil entre los semestres documentados `I`–`IX`, mostrando contadores de materias, suma de ponderación académica y selección activa sin perder materias elegidas en otros semestres.
+  - **Prerrequisitos explicados en lenguaje claro**: resuelve cada código de prerrequisito al nombre completo de la asignatura (p. ej. `SS301` → *«Debes haber aprobado PROGRAMACION DE COMPUTADORES I»* con referencia secundaria `(R - SS200)`) y diferencia visualmente los **requisitos numéricos de créditos** (`70`, `80`, `115`, `132` en 11 asignaturas).
+  - **Bandeja centralizada persistente**: sincronizada entre «Mi pensum» y el Planificador, con conteo de materias, suma de ponderación académica, remoción individual, limpieza con confirmación, advertencia explícita para asignaturas sin grupos publicados antes de generar y transferencia directa mediante **«Armar mi horario»**.
+- **Filtro por semestre curricular en el Planificador (`Todos`, `I`–`IX`, `Otras`)** con soporte para URL (`?semestre=III`) y `localStorage`.
+- **Catálogo inicial de horarios `2026-2`**: **53 materias ofertadas, 512 grupos y 770 sesiones** extraídas del PDF de Academusoft, con identificadores docentes opacos.
+- **Generador de combinaciones sin solapamientos** usando grupos completos, filtros por docente, fijación de grupo, preferencias de franja horaria, días libres y sede.
+- **Calendario semanal, guardado local (IndexedDB) y exportación a PDF y Excel**.
+- **Importación de PDF de Academusoft en el navegador** conservando la selección curricular del usuario y avisando explícitamente si alguna materia o grupo fijado dejó de estar disponible en el nuevo período.
 
-## Tecnología
+## Módulo «Mi pensum»: modalidades, prerrequisitos y período 10
 
-React 19 · Vite 7 · TypeScript · CSS responsive · Radix UI Dialog · iconos Lucide · PDF.js · ExcelJS · jsPDF · IndexedDB (`idb`) · Vitest · Playwright. Los efectos en CSS basados en patrones del catálogo de React Bits no requieren la versión de pago ni instalar el catálogo completo.
+### 1. Uso de las dos modalidades de selección
+- **«Todas las materias»**: ideal para buscar rápidamente cualquier curso de la carrera por nombre o código sin importar a qué semestre pertenece. Al cambiar desde «Por semestre» hacia «Todas las materias», la búsqueda global opera sobre las 62 asignaturas sin quedar restringida al semestre anterior.
+- **«Por semestre» (`I` a `IX`)**: ideal para revisar la carga de un período específico (`[7, 8, 8, 7, 7, 7, 7, 7, 4]` materias y `[16, 18, 19, 19, 18, 18, 17, 17, 13] = 155` unidades de ponderación académica).
+- **Selección única centralizada**: ambas vistas escriben sobre la misma selección persistente (`localStorage`). Puedes marcar materias de `I`, `III`, `V` y `IX`, pulsar **«Armar mi horario»** para configurar grupos/profesores en el Planificador y regresar a **«Mi pensum»** sin perder tus elecciones ni tus preferencias de grupo/docente.
+
+### 2. Significado de prerrequisitos y distinción de conceptos
+Traza distingue cuatro conceptos independientes de la fuente académica:
+1. **Período curricular (`1`–`9` / `I`–`IX`)**: ubicación de la asignatura en el pensum.
+2. **Período académico del horario (p. ej. `2026-2`)**: oferta dinámica de grupos publicada en el PDF vigente.
+3. **Ponderación Académica**: valor curricular de cada asignatura (`1` a `4`), cuya suma en las 62 materias documentadas es **155** (utilizada como créditos para el resumen de selección).
+4. **Prerrequisitos por asignatura vs. Créditos Requisitos**:
+   - **37 relaciones de prerrequisito por asignatura**: resueltas por nombre canónico mediante el índice curricular (p. ej. `SS301` → *«Debes haber aprobado PROGRAMACION DE COMPUTADORES I»*, `SS463` → *«Debes haber aprobado ESTRUCTURA DE DATOS»*, `SS909` → *«Debes haber aprobado PROYECTO DE GRADO I»*).
+   - **11 asignaturas con «Créditos Requisitos» numéricos**: `SS802` (`70`), `AI700` (`80`), `SS810` (`80`), `SS811`, `SS807`, `SS808`, `SS812`, `SS806` (`115`), y `SS906`, `SS907`, `SS908` (`132`). Se muestran de forma informativa y diferenciada; no bloquean la selección curricular porque Traza no está conectado al historial académico oficial del estudiante.
+
+### 3. Ausencia de información del período 10
+El encabezado original de «Consultar Pensum» en Academusoft declara **10 períodos**, pero la transcripción oficial suministrada solo detalla asignaturas de los **períodos 1 a 9** (62 asignaturas, 155 de ponderación académica). Traza **no inventa asignaturas para el período 10**: ofrece navegación de `I` a `IX` e informa explícitamente en la interfaz que *«El período 10 no tiene información en la fuente suministrada»*.
+
+### 4. Materias sin grupos publicados en el horario vigente
+En el catálogo `2026-2`, 9 asignaturas del pensum (`SS705`, `SS810`, `SS809`, `SS807`, `SS808`, `SS906`, `SS907`, `SS908`, `SS909`) no tienen grupos publicados. En **«Mi pensum»** aparecen con el estado *«Sin grupos publicados»* y permanecen seleccionables para consulta; si el estudiante las incluye en su selección, Traza muestra una advertencia explícita antes de generar horarios y en el Planificador, permitiendo generar combinaciones con las asignaturas que sí tienen grupos sin omitir ninguna materia silenciosamente.
+
+## Arquitectura y decisiones técnicas
+
+- **Fuente única de verdad tipada (`src/lib/curriculum.ts`)**: importa y valida al iniciar `src/data/PENSUM_UPC_DATOS.json`, construyendo índices memoizados (`CURRICULUM_INDEX`) por código (`byCode`), por semestre (`bySemester`), texto normalizado de búsqueda (`searchHaystackByCode`) y dependientes (`dependentsByCode`).
+- **Separación entre catálogo estático del pensum y oferta dinámica de grupos**: `reconcileCurriculumAndCatalog` cruza las 62 asignaturas del pensum con el catálogo activo exigiendo coincidencia de código y nombre normalizado. Si un catálogo externo presenta otro código para un nombre similar o el mismo código con nombre distinto, no fusiona automáticamente: registra la divergencia para revisión.
+- **Conservación de nombres oficiales y horas (`HT`, `HP`, `HTP`)**: se conserva el texto oficial exacto (incluyendo abreviaciones como `FORMULACION Y EVALU DE PROYEC EN INGENIERIA` en `FC407`, documentando su alias expandido) y se distingue `null` (`—`) de `0`.
+- **Enrutamiento compatible con GitHub Pages**: navegación por hash (`#pensum`, `#planificador`, `#`) que permite recargar en cualquier vista sin errores `404` en subrutas estáticas.
 
 ## Ejecución local
 
-Requiere Node.js 22+ y conexión a Internet **para instalar las dependencias por primera vez**.
+Requiere Node.js 22+:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abre la dirección impresa por Vite. Para las verificaciones:
+Verificaciones completas:
 
 ```bash
 npm run typecheck
 npm run test
 npm run build
-npx playwright install chromium
 npm run test:e2e
 ```
 
-`npm run preview` abre la compilación de producción. En CI se ejecutan automáticamente todas las verificaciones anteriores.
-
-## Publicación en GitHub Pages
-
-1. Crea un repositorio en GitHub y sube el contenido de esta carpeta a la rama `main` (sin comprimir como un archivo ZIP en el repositorio).
-2. En el repositorio, ve a **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-3. El workflow `.github/workflows/deploy.yml` instala las dependencias, revisa TypeScript, ejecuta pruebas unitarias, compila, ejecuta E2E en Chromium (escritorio/tableta/móvil) y **solo si todo pasa** publica `dist/`.
-4. Vite calcula automáticamente el `base` a partir de `GITHUB_REPOSITORY`: un repo `HorariosUPC` en la cuenta `usuario` usará `https://usuario.github.io/HorariosUPC/`. El repo `usuario.github.io` usará `/`.
-5. Si necesitas indicar el `base` explícitamente, usa `VITE_BASE_PATH=/nombre-repo/` en el entorno de build.
-
-> La primera ejecución de Actions utiliza `npm install` porque se entrega el proyecto sin `package-lock.json` (el entorno de generación actual no pudo acceder al registro npm). Cuando instales localmente, **confirma el `package-lock.json` en el repositorio y cambia ese comando a `npm ci`** para builds reproducibles.
-
-## Cómo filtrar por semestre curricular
-
-1. Abre el **Planificador** (`#planificador`). Por defecto el selector de semestre inicia en **Todos**, mostrando las 62 materias de la malla curricular (y cualquier materia extra del PDF importado).
-2. En el bloque **Semestre del pensum**, selecciona un chip (`I`, `II`, `III`, `IV`, `V`, `VI`, `VII`, `VIII` o `IX`) o navega entre ellos con las flechas del teclado (`←` / `→`, `Inicio` / `Fin`).
-3. Combina el filtro de semestre con el buscador por nombre, código (de malla o del PDF) o docente. Puedes pulsar **Limpiar filtros** en cualquier momento para volver a `Todos` sin perder tus materias seleccionadas.
-4. **Combinación entre semestres (materias atrasadas o adelantadas):** puedes elegir asignaturas en el semestre `III`, cambiar al semestre `V` y agregar más materias. El bloque **Resumen persistente de materias seleccionadas** conserva todas tus elecciones con su semestre y créditos, y el generador calcula combinaciones conjuntas sin cruces.
-5. **Materias sin oferta en el período actual:** las asignaturas de la malla que no tienen grupos publicados en el PDF vigente se muestran con sus datos curriculares (`semestre`, `código`, `créditos`, `área`) y el estado *Sin grupos publicados / No disponible para este período*, deshabilitadas para evitar crear horarios con grupos inexistentes.
-6. **Enlace directo por URL:** puedes abrir directamente un semestre usando `?semestre=III` (o `?semestre=3`), compatible con rutas base de GitHub Pages.
-
-## Importar los PDF del siguiente semestre
-
-1. Usa el catálogo de referencia `2026-2` o selecciona otro anterior como catálogo activo.
-2. Pulsa **Importar PDF / datos** y elige un reporte **Consultar Horario por Programa** de Academusoft. Esta versión soporta el mismo diseño de PDF facilitado como referencia; los PDF escaneados, o con diseño diferente, pueden requerir ajustes.
-3. Revisa el resumen, las alertas y las diferencias respecto al catálogo anterior.
-4. Escribe el período, por ejemplo `2027-1`, y confirma la importación **solo después de comprobar la exactitud de los grupos**.
-5. Escoge asignaturas, docentes si están confirmados o marcados como estimados, genera horarios y descárgalos.
-
-Para respaldar un catálogo usa **Respaldar JSON** o **Exportar HTML**; Traza puede reimportar sus propios HTML estructurados. No interpreta HTML genérico generado por un conversor PDF→HTML.
-
-### Datos y seguridad
-
-- Los catálogos y horarios se procesan localmente. Los nombres de docentes pueden aparecer en la información del horario, pero los números de identificación se sustituyen por identificadores derivados de SHA-256 antes de conservarlos.
-- La precisión del documento importado debe verificarse; las estimaciones nunca garantizan un profesor ni la disponibilidad de cupos.
-- En un navegador en modo privado, al eliminar los datos del sitio o cambiar de equipo, se pueden perder los horarios: usa **Respaldar JSON** para conservar catálogos (los favoritos se guardan dentro del navegador).
-- Los resultados se muestran en **lotes** para impedir que búsquedas enormes congelen la interfaz. Cuando el resultado está truncado se indica explícitamente. Una búsqueda incompleta no equivale a la totalidad de combinaciones posibles.
-
-## Estructura
+## Estructura de archivos principales
 
 ```
+docs/insumos/                                  Insumos originales (prompt maestro, TXT y JSON del pensum)
 src/
-  App.tsx                                      Landing + experiencia de planificación
+  App.tsx                                      Enrutador hash (Landing, Mi pensum, Planificador) y estado centralizado
   components/
-    SemesterFilter.tsx                         Filtro accesible por semestre (Todos, I-IX, Otras)
-    SelectedSubjectsSummary.tsx                Resumen persistente multi-semestre
-    SubjectCatalogList.tsx                     Catálogo curricular y estado sin oferta
-    ImportDialog.tsx                           Importador y comparador de catálogos
+    PensumPage.tsx                             Módulo «Mi pensum» (Todas las materias, Por semestre y bandeja)
+    SemesterFilter.tsx                         Filtro accesible por semestre en el Planificador
+    SelectedSubjectsSummary.tsx                Resumen persistente multi-semestre en el Planificador
+    SubjectCatalogList.tsx                     Listado reconciliado del Planificador
+    ImportDialog.tsx                           Importador y comparador de catálogos PDF/JSON/HTML
     WeeklyCalendar.tsx                         Calendario semanal
   data/
-    PENSUM_INGENIERIA_SISTEMAS_UPC.txt         Malla curricular oficial (62 materias, 155 cr.)
-    catalogo-base.json                         Catálogo de referencia anonimizado (2026-2)
+    PENSUM_UPC_DATOS.json                      Fuente estructurada canónica (62 materias, 155 pond., prerrequisitos)
+    PENSUM_COMPLETO_ING_SISTEMAS_UPC.txt       Referencia textual legible del pensum con prerrequisitos por nombre
+    catalogo-base.json                         Catálogo de horarios de referencia (2026-2)
   lib/
-    types.ts                                   Contratos de datos
-    curriculum.ts                              Conciliación malla ↔ oferta y filtrado puro
-    generator.ts                               Compatibilidad, preferencias y combinaciones
-    reconcile.ts                               Comparador y estimación prudente de docentes
+    types.ts                                   Contratos TypeScript (CurriculumCourse, Choice, Catalog, etc.)
+    curriculum.ts                              Índices memoizados, prerrequisitos, reconciliación y persistencia
+    curriculum.test.ts                         Suite unitaria de integridad de datos, prerrequisitos y flujo
+    generator.ts                               Motor de combinaciones sin cruces
+    reconcile.ts                               Comparador entre semestres y estimación prudente de docentes
     importer.ts                                Importador PDF/JSON/HTML
     exporters.ts                               Exportación PDF, Excel, JSON y HTML
-    storage.ts                                 IndexedDB
-  styles/main.css                              Sistema visual, breakpoints y motion
-scripts/extract_seed.py                        Utilidad offline para reproducir el catálogo de referencia
-src/lib/*.test.ts                              Tests unitarios (generador, comparador, pensum)
-tests/                                         Pruebas E2E y PDF sintético sin datos personales
-.github/workflows/deploy.yml                   Validación, compilación y despliegue
+    storage.ts                                 Persistencia IndexedDB para catálogos y planes guardados
+  styles/main.css                              Sistema visual, estilos de Mi pensum y breakpoints responsive
+tests/smoke.spec.ts                            Suite E2E Playwright (Landing, Mi pensum, Planificador y visual QA)
 ```
-
-Para un análisis técnico de limitaciones y próximos pasos, consulta `docs/ARQUITECTURA_Y_QA.md`.

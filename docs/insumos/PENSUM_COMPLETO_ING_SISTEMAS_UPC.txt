@@ -1,0 +1,376 @@
+﻿PENSUM DE INGENIERÍA DE SISTEMAS — UNIVERSIDAD POPULAR DEL CESAR
+JORNADA ÚNICA
+FUENTE: transcripción de la consulta de pensum proporcionada por el usuario.
+PERÍODOS DECLARADOS POR LA CONSULTA: 10.
+PERÍODOS CON ASIGNATURAS SUMINISTRADAS: 1 A 9.
+NO SE SUMINISTRÓ EL DETALLE DEL PERÍODO 10: NO INVENTAR MATERIAS.
+TOTAL DOCUMENTADO: 62 ASIGNATURAS; 155 UNIDADES DE PONDERACIÓN ACADÉMICA (USADAS COMO CRÉDITOS PARA SUMATORIA).
+
+GUÍA DE LECTURA:
+HT = horas teóricas; HP = horas prácticas; HTP = horas teórico-prácticas.
+— significa que la consulta muestra un guion en esa columna.
+Pond. = Ponderación Académica, según el encabezado original.
+Créditos req. = campo «Créditos Requisitos» de la consulta.
+Prerrequisito = «R - CÓDIGO» del origen, expandido al nombre de la materia.
+Un valor numérico de créditos requeridos se conserva literalmente; validar con normativa UPC antes de bloquear matrícula.
+En la interfaz, mostrar nombre completo del prerrequisito. El código queda como referencia técnica secundaria.
+Este archivo es la fuente curricular; los grupos y docentes se extraen por separado del PDF de horarios del período.
+
+====================================================================================================
+PERÍODO 1 — PRIMERO SEMESTRE | 7 materias | 16 de ponderación académica
+====================================================================================================
+SS407 | ALGORITMOS Y FUNDAMENTOS DE PROGRAMACION
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+MT104 | CALCULO DIFERENCIAL
+  HT: 4 | HP: — | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+UPC01 | CATEDRA UPECISTA
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 1 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+PG102 | COMUNICACION ORAL Y ESCRITA I
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 2 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+HM201 | HUMANIDADES I
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 2 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+SS105 | INTRODUCCION A LA INGENIERIA DE SISTEMAS
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 2 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+MT117 | LOGICA MATEMATICA
+  HT: 4 | HP: — | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+====================================================================================================
+PERÍODO 2 — SEGUNDO SEMESTRE | 8 materias | 18 de ponderación académica
+====================================================================================================
+UPC08 | ACTIVIDAD DEPORTIVA
+  HT: — | HP: — | HTP: 2 | Ponderación académica: 1 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+MT301B | ALGEBRA LINEAL
+  HT: 3 | HP: — | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: LOGICA MATEMATICA (MT117)
+  Requisito textual original: R - MT117
+
+MT303B | CALCULO INTEGRAL
+  HT: 3 | HP: — | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: CALCULO DIFERENCIAL (MT104)
+  Requisito textual original: R - MT104
+
+PG200 | COMUNICACION ORAL Y ESCRITA II
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 2 | Créditos requisitos: 0
+  Prerrequisito legible: COMUNICACION ORAL Y ESCRITA I (PG102)
+  Requisito textual original: R - PG102
+
+HM202 | HUMANIDADES II
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 2 | Créditos requisitos: 0
+  Prerrequisito legible: HUMANIDADES I (HM201)
+  Requisito textual original: R - HM201
+
+FS202 | MECANICA
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: CALCULO DIFERENCIAL (MT104)
+  Requisito textual original: R - MT104
+
+SS200 | PROGRAMACION DE COMPUTADORES I
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: ALGORITMOS Y FUNDAMENTOS DE PROGRAMACION (SS407)
+  Requisito textual original: R - SS407
+
+ID212 | TECH ENGLISH I
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 1 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+====================================================================================================
+PERÍODO 3 — TERCERO SEMESTRE | 8 materias | 19 de ponderación académica
+====================================================================================================
+UPC09 | ACTIVIDAD CULTURAL
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 1 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+MT331 | CALCULO MULTIVARIABLE
+  HT: 4 | HP: — | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: CALCULO INTEGRAL (MT303B)
+  Requisito textual original: R - MT303B
+
+FS400 | ELECTROMAGNETISMO
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: MECANICA (FS202)
+  Requisito textual original: R - FS202
+
+MT403 | ESTADISTICA DESCRIPTIVA E INFERENCIAL
+  HT: 4 | HP: — | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: ALGEBRA LINEAL (MT301B)
+  Requisito textual original: R - MT301B
+
+SS301 | ESTRUCTURA DE DATOS
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: PROGRAMACION DE COMPUTADORES I (SS200)
+  Requisito textual original: R - SS200
+
+SS300 | PROGRAMACION DE COMPUTADORES II
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: PROGRAMACION DE COMPUTADORES I (SS200)
+  Requisito textual original: R - SS200
+
+SS303 | SEMILLERO DE INVESTIGACION
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 2 | Créditos requisitos: 0
+  Prerrequisito legible: COMUNICACION ORAL Y ESCRITA II (PG200)
+  Requisito textual original: R - PG200
+
+ID341 | TECH ENGLISH II
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 1 | Créditos requisitos: 0
+  Prerrequisito legible: TECH ENGLISH I (ID212)
+  Requisito textual original: R - ID212
+
+====================================================================================================
+PERÍODO 4 — CUARTO SEMESTRE | 7 materias | 19 de ponderación académica
+====================================================================================================
+ING301 | METODOLOGIA DE LA INVESTIGACION
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 2 | Créditos requisitos: 0
+  Prerrequisito legible: SEMILLERO DE INVESTIGACION (SS303)
+  Requisito textual original: R - SS303
+
+SS463 | BASE DE DATOS
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: ESTRUCTURA DE DATOS (SS301)
+  Requisito textual original: R - SS301
+
+MT402 | ECUACIONES DIFERENCIALES
+  HT: 4 | HP: — | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: CALCULO MULTIVARIABLE (MT331)
+  Requisito textual original: R - MT331
+
+SS705 | ELECTIVA CIENCIAS ADMIN ECONOMICAS Y CONTABLES
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 2 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+AI432 | INVESTIGACION DE OPERACIONES
+  HT: 3 | HP: — | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: ESTADISTICA DESCRIPTIVA E INFERENCIAL (MT403)
+  Requisito textual original: R - MT403
+
+FS329 | ONDAS
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: ELECTROMAGNETISMO (FS400)
+  Requisito textual original: R - FS400
+
+SS462 | PROGRAMACION DE COMPUTADORES III
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: PROGRAMACION DE COMPUTADORES II (SS300)
+  Requisito textual original: R - SS300
+
+====================================================================================================
+PERÍODO 5 — QUINTO SEMESTRE | 7 materias | 18 de ponderación académica
+====================================================================================================
+ING302 | SEMINARIO DE INVESTIGACION
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 2 | Créditos requisitos: 0
+  Prerrequisito legible: METODOLOGIA DE LA INVESTIGACION (ING301)
+  Requisito textual original: R - ING301
+
+MT309B | ANALISIS NUMERICO
+  HT: 3 | HP: — | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: ECUACIONES DIFERENCIALES (MT402)
+  Requisito textual original: R - MT402
+
+SS500 | ARQUITECTURA DE COMPUTADORES
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: ONDAS (FS329)
+  Requisito textual original: R - FS329
+
+SS802 | BASE DE DATOS AVANZADAS
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 70
+  Prerrequisito legible: 70 créditos requeridos (sin requisito por materia indicado)
+  Requisito textual original: —
+
+UPC23 | CATEDRA DE LA PAZ
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 1 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+SS502 | INGENIERIA DE SOFTWARE I
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: BASE DE DATOS (SS463)
+  Requisito textual original: R - SS463
+
+SS501 | PROGRAMACION WEB
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: PROGRAMACION DE COMPUTADORES III (SS462)
+  Requisito textual original: R - SS462
+
+====================================================================================================
+PERÍODO 6 — SEXTO SEMESTRE | 7 materias | 18 de ponderación académica
+====================================================================================================
+UPC25 | CATEDRA AMBIENTAL Y DESARROLLO SOSTENIBLE
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 1 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+SS602 | INGENIERIA DE SOFTWARE II
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: INGENIERIA DE SOFTWARE I (SS502)
+  Requisito textual original: R - SS502
+
+AI700 | INGENIERIA ECONOMICA
+  HT: 4 | HP: — | HTP: — | Ponderación académica: 3 | Créditos requisitos: 80
+  Prerrequisito legible: 80 créditos requeridos (sin requisito por materia indicado)
+  Requisito textual original: —
+
+SS604 | INNOVACION Y EMPRENDIMIENTO TECNOLOGICO
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 2 | Créditos requisitos: 0
+  Prerrequisito legible: SEMINARIO DE INVESTIGACION (ING302)
+  Requisito textual original: R - ING302
+
+SS601 | MODELOS Y SIMULACION
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: ANALISIS NUMERICO (MT309B)
+  Requisito textual original: R - MT309B
+
+SS603 | PROGRAMACION MOVIL
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: PROGRAMACION WEB (SS501)
+  Requisito textual original: R - SS501
+
+SS600 | SISTEMAS OPERATIVOS
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: ARQUITECTURA DE COMPUTADORES (SS500)
+  Requisito textual original: R - SS500
+
+====================================================================================================
+PERÍODO 7 — SÉPTIMO SEMESTRE | 7 materias | 17 de ponderación académica
+====================================================================================================
+UPC24 | CATEDRA DE EMPRENDIMIENTO
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 1 | Créditos requisitos: 0
+  Prerrequisito legible: Ninguno indicado
+  Requisito textual original: —
+
+FC407 | FORMULACION Y EVALU DE PROYEC EN INGENIERIA
+  HT: 3 | HP: — | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: INGENIERIA ECONOMICA (AI700)
+  Requisito textual original: R - AI700
+
+SS706 | INGENIERIA DE SOFTWARE III
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: INGENIERIA DE SOFTWARE II (SS602)
+  Requisito textual original: R - SS602
+
+SS702 | INTELIGENCIA ARTIFICIAL
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: MODELOS Y SIMULACION (SS601)
+  Requisito textual original: R - SS601
+
+SS701 | REDES Y COMUNICACIONES
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: SISTEMAS OPERATIVOS (SS600)
+  Requisito textual original: R - SS600
+
+SS708 | RESEARCH PROJECT
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 1 | Créditos requisitos: 0
+  Prerrequisito legible: INNOVACION Y EMPRENDIMIENTO TECNOLOGICO (SS604)
+  Requisito textual original: R - SS604
+
+SS707 | TECNOLOGIAS INMERSIVAS
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: PROGRAMACION MOVIL (SS603)
+  Requisito textual original: R - SS603
+
+====================================================================================================
+PERÍODO 8 — OCTAVO SEMESTRE | 7 materias | 17 de ponderación académica
+====================================================================================================
+SS810 | ELECTIVA BASICA DE INGENIERIA
+  HT: 4 | HP: — | HTP: — | Ponderación académica: 2 | Créditos requisitos: 80
+  Prerrequisito legible: 80 créditos requeridos (sin requisito por materia indicado)
+  Requisito textual original: —
+
+SS811 | ETICA PROFESIONAL
+  HT: 2 | HP: — | HTP: — | Ponderación académica: 1 | Créditos requisitos: 115
+  Prerrequisito legible: 115 créditos requeridos (sin requisito por materia indicado)
+  Requisito textual original: —
+
+SS809 | GESTION DE PROYECTOS TI
+  HT: 4 | HP: — | HTP: — | Ponderación académica: 3 | Créditos requisitos: 0
+  Prerrequisito legible: INGENIERIA DE SOFTWARE III (SS706)
+  Requisito textual original: R - SS706
+
+SS807 | OPTATIVA DE PROFUNDIZACION I
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 115
+  Prerrequisito legible: 115 créditos requeridos (sin requisito por materia indicado)
+  Requisito textual original: —
+
+SS808 | OPTATIVA DE PROFUNDIZACION II
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 115
+  Prerrequisito legible: 115 créditos requeridos (sin requisito por materia indicado)
+  Requisito textual original: —
+
+SS812 | PROYECTO DE GRADO I
+  HT: 4 | HP: — | HTP: — | Ponderación académica: 2 | Créditos requisitos: 115
+  Prerrequisito legible: 115 créditos requeridos (sin requisito por materia indicado)
+  Requisito textual original: —
+
+SS806 | SEGURIDAD DE LA INFORMACION
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 115
+  Prerrequisito legible: 115 créditos requeridos (sin requisito por materia indicado)
+  Requisito textual original: —
+
+====================================================================================================
+PERÍODO 9 — NOVENO SEMESTRE | 4 materias | 13 de ponderación académica
+====================================================================================================
+SS906 | OPTATIVA DE PROFUNDIZACION III
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 132
+  Prerrequisito legible: 132 créditos requeridos (sin requisito por materia indicado)
+  Requisito textual original: —
+
+SS907 | OPTATIVA DE PROFUNDIZACION IV
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 132
+  Prerrequisito legible: 132 créditos requeridos (sin requisito por materia indicado)
+  Requisito textual original: —
+
+SS908 | OPTATIVA DE PROFUNDIZACION V
+  HT: 2 | HP: 2 | HTP: — | Ponderación académica: 3 | Créditos requisitos: 132
+  Prerrequisito legible: 132 créditos requeridos (sin requisito por materia indicado)
+  Requisito textual original: —
+
+SS909 | TRABAJO DE GRADO II
+  HT: 4 | HP: 4 | HTP: — | Ponderación académica: 4 | Créditos requisitos: 0
+  Prerrequisito legible: PROYECTO DE GRADO I (SS812)
+  Requisito textual original: R - SS812
+
+====================================================================================================
+RESUMEN DE LOS REQUISITOS NUMÉRICOS DE CRÉDITOS
+====================================================================================================
+SS802 | Semestre 5 | BASE DE DATOS AVANZADAS | 70 créditos
+AI700 | Semestre 6 | INGENIERIA ECONOMICA | 80 créditos
+SS810 | Semestre 8 | ELECTIVA BASICA DE INGENIERIA | 80 créditos
+SS811 | Semestre 8 | ETICA PROFESIONAL | 115 créditos
+SS807 | Semestre 8 | OPTATIVA DE PROFUNDIZACION I | 115 créditos
+SS808 | Semestre 8 | OPTATIVA DE PROFUNDIZACION II | 115 créditos
+SS812 | Semestre 8 | PROYECTO DE GRADO I | 115 créditos
+SS806 | Semestre 8 | SEGURIDAD DE LA INFORMACION | 115 créditos
+SS906 | Semestre 9 | OPTATIVA DE PROFUNDIZACION III | 132 créditos
+SS907 | Semestre 9 | OPTATIVA DE PROFUNDIZACION IV | 132 créditos
+SS908 | Semestre 9 | OPTATIVA DE PROFUNDIZACION V | 132 créditos
+
+DATOS FALTANTES / VALIDACIÓN
+- El sistema académico declara 10 períodos, pero la tabla compartida no presenta materias del período 10.
+- No agregar materias, requisitos o créditos del período 10 sin fuente oficial.
+- Respetar los nombres tal como aparecen en la consulta, incluso si están abreviados (por ejemplo FC407).
+- El requisito numérico de créditos no debe equipararse automáticamente a reglas de matrícula confirmadas.
+- En la UI separar créditos de la materia (Ponderación académica) de créditos exigidos como requisito.

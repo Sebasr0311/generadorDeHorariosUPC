@@ -1,0 +1,80 @@
+# PROMPT MAESTRO PARA CLI — TRAZA: MÓDULO «MI PENSUM» + SELECCIÓN GENERAL Y POR SEMESTRE
+
+ROL
+Actúa como ingeniero sénior de software, arquitecto frontend, especialista en procesamiento de horarios académicos, UX/UI y QA. Trabaja sobre el repositorio EXISTENTE de Traza (planificador universitario de Ingeniería de Sistemas — Universidad Popular del Cesar, Colombia). Tu tarea es implementar un módulo de malla curricular/pensum completo, no crear una aplicación aparte ni reemplazar el planificador funcional.
+
+ARCHIVOS ADJUNTOS — LEER ANTES DE MODIFICAR
+1. PENSUM_COMPLETO_ING_SISTEMAS_UPC.txt: fuente de consulta legible para revisar cada materia, sus horas, ponderación académica y prerrequisitos resueltos a nombres.
+2. PENSUM_UPC_DATOS.json: la misma fuente en formato estructurado, para importar o transformar los datos al modelo del proyecto. NO usar datos inventados ni reconstrucciones de memoria.
+
+ALCANCE Y PRIORIDADES
+A. Dar a Traza una página propia «Mi pensum», accesible desde la landing y desde la navegación del planificador. Debe verse como parte del mismo producto premium.
+B. Permitir DOS vías de selección, sincronizadas y equivalentes:
+   - «Todas las materias»: catálogo global de TODAS las asignaturas, con búsqueda instantánea por nombre, nombre normalizado sin tildes y código; puede mostrar filtros opcionales por disponibilidad y semestre, sin obligar a cambiar de vista.
+   - «Por semestre»: navegar por los semestres documentados I–IX; mostrar únicamente las materias del semestre elegido y poder seguir seleccionando de otros semestres sin perder nada.
+C. Ambas vías escriben en UNA MISMA selección centralizada, sin duplicados y persistente durante la navegación. Cada materia puede agregarse/quitarse desde cualquier vía. Mostrar una bandeja o resumen persistente de seleccionadas con conteo y total de ponderación/créditos, posibilidad de quitar elementos, limpiar con confirmación y botón destacado «Armar mi horario».
+D. Pulsar «Armar mi horario» debe navegar al PLANIFICADOR EXISTENTE y transferir las materias por su código canónico; el planificador las recibe preseleccionadas y conserva preferencias previas de docentes/grupos cuando sigan siendo válidas. No crear una segunda lógica de generación de horarios. El usuario debe poder regresar a «Mi pensum» sin perder su selección.
+E. Mostrar requisitos en lenguaje claro. Por ejemplo, para SS301 decir «Debes haber aprobado Programación de Computadores I», NO limitarse a «R - SS200». Si el requisito es numérico, «Requiere 70 créditos» (o «créditos aprobados», SOLO si la política académica lo confirma; mientras tanto explicar que es un requisito numérico registrado por Academusoft). Si no se indica nada, «Sin prerrequisito indicado». Mostrar el código del prerrequisito como dato secundario opcional, nunca en reemplazo de su nombre.
+F. Mantener funcionales todas las funciones de Traza ya implementadas: catálogo de grupos del PDF de Academusoft, generador de combinaciones sin cruces, filtros por docente, detección de docentes inferidos/probables, cambios de semestre, importación PDF, calendarios, guardado, exportación Excel/PDF y CI para GitHub Pages.
+
+FUENTE Y REGLAS DE DATOS — CRÍTICO
+- Universidad: UNIVERSIDAD POPULAR DEL CESAR; programa: INGENIERIA DE SISTEMAS; jornada: JORNADA UNICA.
+- El encabezado de «Consultar Pensum» declara 10 períodos, pero la transcripción suministrada solo detalla asignaturas de los períodos 1 a 9: 62 asignaturas y suma 155 en la columna «Ponderación Académica». NO inventar asignaturas del período 10. Por ahora ofrecer filtros de I a IX e indicar discretamente «El período 10 no tiene información en la fuente suministrada» en una sección de información, si resulta pertinente. No describir la carrera como oficialmente de solo 9 semestres.
+- Los códigos, nombres, HT, HP, HTP, ponderación académica, requisitos numéricos de créditos y prerrequisitos por código del JSON son los que se deben usar, sin substituirlos por datos de otros pensum. Si el sistema actual contiene otro código para una materia de nombre similar, no fusionar automáticamente: detectar divergencia y documentarla.
+- Distinguir cuatro conceptos distintos: (1) período curricular de la asignatura (1–9); (2) período académico que aparece en el PDF de horarios (por ejemplo 2-2026); (3) valor de la asignatura en «Ponderación Académica», utilizado para el resumen de créditos; (4) «Créditos Requisitos», que registra valores 0/70/80/115/132. No mezclarlos.
+- Prerrequisitos por materia: campo «prerequisitoCodigo», resoluble al nombre canónico del curso mediante el índice de códigos. Conservar código y nombre, además del requisito de créditos.
+- La cifra de «Créditos Requisitos» se muestra de forma informativa. No crear bloqueo de matrícula automáticamente, porque el significado y reglas institucionales precisas no se han validado con el reglamento. Tampoco confundir factibilidad de horario con elegibilidad académica.
+- Conservar «HT», «HP», «HTP» diferenciados. «null» en JSON corresponde a «-» en el texto oficial, no a un valor cero arbitrario.
+- Mantener nombre original completo, incluyendo abreviaciones textuales oficiales como «FORMULACION Y EVALU DE PROYEC EN INGENIERIA». Si quieres una etiqueta de visualización más amable, mantener el texto original en los datos y documentar la etiqueta como alias, sin sustituir la fuente.
+- Se permiten materias de semestres diferentes en una misma selección (p. ej., SS301 de III y SS500/SS802 de V). Jamás descartar selecciones al cambiar de vista o semestre.
+- Una materia curricular puede no tener ningún grupo en el PDF de horarios vigente: debe aparecer en «Mi pensum» con estado «Sin grupos publicados» y permanecer seleccionable para consulta, pero informar claramente que no podrá incluirse en una generación completa hasta que exista algún grupo compatible. NO inventar grupos ni ocultar la materia.
+- La lista de asignaturas estáticas es independiente del listado dinámico de grupos por período; al importar un PDF nuevo se reemplazan/actualizan grupos y sesiones, NO el pensum académico ni las selecciones del usuario. Generar aviso si un código anteriormente disponible deja de estarlo.
+
+ARQUITECTURA Y ESTADO
+1. Antes de escribir, inspecciona package.json, enrutador, estructura de módulos, tipos de modelos, manejo de estado, importación PDF, persistencia, tests, estilos y configuración Vite/GitHub Pages. Define una implementación incremental que reuse el diseño y componentes actuales. No introduzcas dependencias innecesarias.
+2. Crear una única fuente de verdad del pensum, tipada con TypeScript. Modelo propuesto (adáptalo a convenciones existentes): CurriculumCourse { code: string; name: string; semester: number; academicWeight: number; ht: number | null; hp: number | null; htp: number | null; requiredCredits: number; prerequisiteCodes: string[] }. Aunque la fuente tiene a lo sumo un prerequisito por materia, usar array si facilita escalabilidad.
+3. Construir índices memoizados por código, semestre y búsqueda, resolviendo nombres de requisitos sin búsquedas repetidas costosas. Normalizar acentos y espacios para búsqueda insensible a tildes y mayúsculas; respetar nombres visibles.
+4. Integrar selección con el almacenamiento local existente (o añadir una solución robusta con LocalStorage/IndexedDB según el repositorio), con migración de datos si la estructura de selección cambia. No borrar horarios guardados ni preferencias del usuario. No persistir información sensible que no sea necesaria.
+5. Usar rutas amigables (ej. /pensum y /planificador) compatibles con GitHub Pages: hash routing o estrategia equivalente para evitar error 404 al recargar dentro de una subruta. Respetar import.meta.env.BASE_URL y vite.config.ts con base configurable para repositorios de GitHub Pages.
+6. Separar dominio curricular, adaptadores de importación, aplicación/estado y componentes UI. Evitar datos hardcodeados dispersos por JSX. Validar integridad de cada objeto y duplicados al inicializar el catálogo. Documentar criterios de reconciliación de código y alias.
+
+DISEÑO / UX — PRODUCTO PREMIUM Y TOTALMENTE RESPONSIVE
+- Landing: conservar la presentación pública con una sección específica que explique «Explora el pensum, elige materias y genera horarios» y CTAs a «Explorar mi pensum» y «Armar horario».
+- Página «Mi pensum»: encabezado claro, resumen del programa (62 materias, 155 de ponderación académica, 9 períodos documentados), buscador global accesible, selector «Todas las materias / Por semestre», tarjetas elegantes con nombre, código discreto, semestre, ponderación/créditos, requisitos y disponibilidad de grupos.
+- Vista «Por semestre»: selector por semestres I–IX en pestañas o chips con acceso por teclado, contadores de materias y selección visible; en móvil permitir scroll horizontal o select accesible, sin cortes.
+- Vista «Todas las materias»: buscador global prioritario, agrupación o filtros opcionales y resultados ordenados. Debe ser fácil encontrar materias de distintos semestres sin ir navegando uno por uno.
+- Resumen de selección: panel lateral sticky en escritorio y barra/bottom-sheet accesible en móvil; no cubrir acciones ni información. Contador de materias, total académico, lista de seleccionadas y CTA «Armar mi horario».
+- Prerrequisitos: texto descriptivo expandido al nombre; iconografía comprensible; si falta el dato, no inventarlo. Para requisitos numéricos, diferenciarlos visualmente del requisito de aprobar una asignatura.
+- Accesibilidad: foco visible, roles/etiquetas, contraste WCAG AA donde sea viable, navegación completa por teclado, reduced-motion, anuncios para cambios de selección (aria-live), estados vacíos y errores útiles. Respetar 320, 375, 390, 430, 768, 1024, 1280 y 1440 px. No scroll horizontal global, tarjetas cortadas ni overflow de títulos extensos.
+- Animaciones: usar React Bits con criterio donde corresponda (ShinyText, SpotlightCard u otros compatibles que YA existan o se puedan incorporar legalmente). Más expresión en landing; animaciones discretas en el flujo de selección, sin animaciones pesadas del calendario. No sacrificar rendimiento ni accesibilidad.
+- Consistencia: estilos, tipografía, colores, spacing, componentes y visualizaciones del Traza existente. No fabricar una UI genérica inconexa ni duplicar su sistema de diseño.
+
+LÓGICA DE INTERACCIÓN, CASOS Y RESTRICCIONES
+1. Seleccionar desde «Todas las materias», cambiar a «Por semestre», elegir otras, volver a «Todas»: todas permanecen.
+2. Buscar por «electromagnetismo», «ELECTROMAGNETISMO», variantes sin tilde y por «FS400»: encontrar el mismo elemento. Búsqueda global no se limita al semestre previamente filtrado cuando el usuario cambia a «Todas las materias».
+3. Repetir clic en una materia seleccionada la deselecciona y actualiza inmediatamente la bandeja; no admitir duplicados.
+4. Debe ser posible seleccionar simultáneamente materias de I, III, V y IX; la selección no impone limitación por semestre.
+5. Si usuario marca una materia sin grupo publicado, mostrar advertencia explícita antes de generar. Ofrecer acción para volver al catálogo o generar con las que sí tengan grupo, pero NO omitir una asignatura silenciosamente.
+6. Al abrir planificador desde selección curricular, crear/actualizar estado respetando grupos y profesores ya elegidos que sigan disponibles; si un grupo desapareció, avisar y requerir nueva elección en vez de arrastrar selección inválida.
+7. Tras importar PDF actualizado, recatalogar disponibilidad, mantener IDs canónicos; informar grupos nuevos, removidos o con horario modificado. Un docente del período anterior NUNCA es oficial: usar etiquetas «confirmado», «probable», «sin asignar»/«por confirmar» según reglas existentes. Un grupo nuevo no hereda docente; un grupo con horario cambiado no recibe automáticamente su docente antiguo.
+8. No bloquear selección curricular por no cumplir supuesto prerrequisito. Los datos sobre avance académico no están vinculados a historial oficial del usuario. Si se incorpora comprobación futura, debe ser «orientativa» y claramente diferenciada de la habilitación oficial.
+9. No exigir cuenta ni backend para funcionamiento básico. GitHub Pages debe publicar todo en estático. Cualquier integración futura con Supabase debe quedar fuera del alcance salvo que ya exista y sea imprescindible.
+10. Si la búsqueda de combinaciones tiene límites de seguridad, no afirmar «todas las combinaciones» cuando el resultado es parcial. Mantener advertencias honestas del motor actual.
+
+VERIFICACIÓN EXHAUSTIVA (OBLIGATORIA ANTES DE FINALIZAR)
+- Pruebas de datos: exactamente 62 materias, códigos únicos, 9 períodos detallados, distribución por período [7,8,8,7,7,7,7,7,4], suma de ponderación [16,18,19,19,18,18,17,17,13] = 155; período 10 marcado como no suministrado; 11 asignaturas con requisitos numéricos: SS802=70; AI700=80; SS810=80; SS811, SS807, SS808, SS812, SS806=115; SS906, SS907, SS908=132.
+- Pruebas de prerrequisitos: 37 relaciones por asignatura; cada código existe en el pensum; UI muestra nombre completo y no solo códigos; SS301 -> PROGRAMACION DE COMPUTADORES I, SS463 -> ESTRUCTURA DE DATOS, SS909 -> PROYECTO DE GRADO I. No confundir «Ponderación Académica» con «Créditos Requisitos».
+- Pruebas de componentes/flujo: selección de distintas modalidades, toggle sin duplicado, conservación al cambiar semestre/ruta/recargar, búsqueda acento-insensible, búsqueda por código, notificación al elegir materia sin grupos, transferencia al planificador, retorno al pensum, limpieza con confirmación.
+- Pruebas de integración/regresión: catálogo PDF, generación de horarios, detección de cruces, docentes confirmados/probables/desconocidos, grupos nuevos/modificados, exportaciones PDF/Excel, almacenamiento, importación y visualización.
+- Pruebas visuales end-to-end en Playwright para móvil/tablet/desktop, incluyendo modales, barra de seleccionadas, menú móvil, scroll, tamaños 320/375/390/430/768/1024/1280/1440, dark mode si existe, reduced-motion y navegación por teclado.
+- Ejecutar herramientas reales disponibles del repositorio (npm ci, lint, typecheck, unit tests, build, e2e) y verificar que un build estático navega y recarga con la ruta de GitHub Pages/base path. Inspeccionar screenshots de Playwright y corregir problemas detectados antes de entregar.
+- CI de GitHub Actions: test/lint/types/build antes de deploy; nunca publicar si falla. Si no cuentas con navegador, Node, permisos o red, informar explícitamente qué verificaciones quedaron PENDIENTES: nunca marcarlas como ejecutadas ni afirmar cero errores sin evidencia.
+
+ENTREGA
+- Implementar cambios DIRECTAMENTE en el repositorio actual; conservar estabilidad y retrocompatibilidad. No trabajar sobre una maqueta aislada.
+- Dejar README actualizado con uso de las dos modalidades, significado de prerrequisitos y ausencia de información del período 10; documentación breve de arquitectura y decisiones, y resumen de los archivos cambiados.
+- Reportar pruebas con comandos realmente ejecutados, resultados, capturas si hay, errores hallados y corregidos y pendientes reales.
+- No hacer merge ni deploy a producción sin autorización si las políticas del repositorio requieren revisión; dejar PR listo si corresponde.
+
+CRITERIO DE ACEPTACIÓN FINAL
+Un estudiante entra en «Mi pensum», busca una materia por código o nombre sin importar el semestre, selecciona varias de semestres distintos; cambia a «Por semestre» y selecciona más sin perder las anteriores; ve prerrequisitos descritos por NOMBRE y requisitos de créditos correctamente diferenciados; revisa la bandeja y pulsa «Armar mi horario»; el planificador existente muestra las materias preseleccionadas y permite configurar grupos, profesores y generar combinaciones con el catálogo del PDF disponible. Funciona en móvil y GitHub Pages, sin registros duplicados ni errores visuales conocidos, con verificaciones reportadas honestamente.

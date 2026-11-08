@@ -1,9 +1,11 @@
-import rawPensumTxt from '../data/PENSUM_INGENIERIA_SISTEMAS_UPC.txt?raw';
+import rawPensumJson from '../data/PENSUM_UPC_DATOS.json';
 import type {
   Catalog,
   Choice,
+  CurriculumCourse,
+  CurriculumMetadata,
   CurriculumSubject,
-  FormationArea,
+  PensumSelectionMode,
   ReconciledCatalogItem,
   ReconciliationIncident,
   RomanSemester,
@@ -38,17 +40,62 @@ export const ROMAN_TO_NUMBER: Record<string, SemesterNumber> = {
   IX: 9,
 };
 
-export const EXPECTED_SEMESTER_TOTALS: Record<SemesterNumber, { subjects: number; credits: number }> = {
-  1: { subjects: 7, credits: 16 },
-  2: { subjects: 8, credits: 18 },
-  3: { subjects: 8, credits: 19 },
-  4: { subjects: 7, credits: 19 },
-  5: { subjects: 7, credits: 18 },
-  6: { subjects: 7, credits: 18 },
-  7: { subjects: 7, credits: 17 },
-  8: { subjects: 7, credits: 17 },
-  9: { subjects: 4, credits: 13 },
+export const EXPECTED_SEMESTER_TOTALS: Record<
+  SemesterNumber,
+  { subjects: number; academicWeight: number; credits: number }
+> = {
+  1: { subjects: 7, academicWeight: 16, credits: 16 },
+  2: { subjects: 8, academicWeight: 18, credits: 18 },
+  3: { subjects: 8, academicWeight: 19, credits: 19 },
+  4: { subjects: 7, academicWeight: 19, credits: 19 },
+  5: { subjects: 7, academicWeight: 18, credits: 18 },
+  6: { subjects: 7, academicWeight: 18, credits: 18 },
+  7: { subjects: 7, academicWeight: 17, credits: 17 },
+  8: { subjects: 7, academicWeight: 17, credits: 17 },
+  9: { subjects: 4, academicWeight: 13, credits: 13 },
 };
+
+/**
+ * Documented friendly display aliases for official abbreviated titles in Academusoft.
+ * The original `name` from PENSUM_UPC_DATOS.json is always preserved verbatim.
+ */
+export const DISPLAY_NAME_ALIASES: Readonly<Record<string, string>> = Object.freeze({
+  FC407: 'FORMULACION Y EVALUACION DE PROYECTOS EN INGENIERIA',
+  SS705: 'ELECTIVA CIENCIAS ADMINISTRATIVAS, ECONOMICAS Y CONTABLES',
+});
+
+/**
+ * Documented divergences between external/brochure pensum codes and the official
+ * Academusoft "Consultar Pensum" dataset (PENSUM_UPC_DATOS.json).
+ * Kept as audit documentation; never used to silently overwrite canonical codes.
+ */
+export const DOCUMENTED_EXTERNAL_PENSUM_DIVERGENCES = Object.freeze([
+  { canonicalCode: 'MT117', externalCode: 'MT203', name: 'LOGICA MATEMATICA', semester: 1 },
+  { canonicalCode: 'ID212', externalCode: 'ID301', name: 'TECH ENGLISH I', semester: 2 },
+  { canonicalCode: 'SS303', externalCode: 'ING300', name: 'SEMILLERO DE INVESTIGACION', semester: 3 },
+  { canonicalCode: 'ID341', externalCode: 'ID302', name: 'TECH ENGLISH II', semester: 3 },
+  { canonicalCode: 'SS705', externalCode: 'EC105', name: 'ELECTIVA CIENCIAS ADMIN ECONOMICAS Y CONTABLES', semester: 4 },
+  { canonicalCode: 'SS802', externalCode: 'SS503', name: 'BASE DE DATOS AVANZADAS', semester: 5 },
+  { canonicalCode: 'UPC23', externalCode: 'UPC15', name: 'CATEDRA DE LA PAZ', semester: 5 },
+  { canonicalCode: 'UPC25', externalCode: 'SS706', name: 'CATEDRA AMBIENTAL Y DESARROLLO SOSTENIBLE', semester: 6 },
+  { canonicalCode: 'SS604', externalCode: 'ING303', name: 'INNOVACION Y EMPRENDIMIENTO TECNOLOGICO', semester: 6 },
+  { canonicalCode: 'UPC24', externalCode: 'UPC10', name: 'CATEDRA DE EMPRENDIMIENTO', semester: 7 },
+  { canonicalCode: 'SS706', externalCode: 'SS704', name: 'INGENIERIA DE SOFTWARE III', semester: 7 },
+  { canonicalCode: 'SS702', externalCode: 'SS700', name: 'INTELIGENCIA ARTIFICIAL', semester: 7 },
+  { canonicalCode: 'SS708', externalCode: 'ING304', name: 'RESEARCH PROJECT', semester: 7 },
+  { canonicalCode: 'SS707', externalCode: 'SS705', name: 'TECNOLOGIAS INMERSIVAS', semester: 7 },
+  { canonicalCode: 'SS810', externalCode: 'SS801', name: 'ELECTIVA BASICA DE INGENIERIA', semester: 8 },
+  { canonicalCode: 'SS811', externalCode: 'SS806', name: 'ETICA PROFESIONAL', semester: 8 },
+  { canonicalCode: 'SS809', externalCode: 'SS802', name: 'GESTION DE PROYECTOS TI', semester: 8 },
+  { canonicalCode: 'SS807', externalCode: 'SS804', name: 'OPTATIVA DE PROFUNDIZACION I', semester: 8 },
+  { canonicalCode: 'SS808', externalCode: 'SS805', name: 'OPTATIVA DE PROFUNDIZACION II', semester: 8 },
+  { canonicalCode: 'SS812', externalCode: 'SS807', name: 'PROYECTO DE GRADO I', semester: 8 },
+  { canonicalCode: 'SS806', externalCode: 'SS803', name: 'SEGURIDAD DE LA INFORMACION', semester: 8 },
+  { canonicalCode: 'SS906', externalCode: 'SS901', name: 'OPTATIVA DE PROFUNDIZACION III', semester: 9 },
+  { canonicalCode: 'SS907', externalCode: 'SS902', name: 'OPTATIVA DE PROFUNDIZACION IV', semester: 9 },
+  { canonicalCode: 'SS908', externalCode: 'SS903', name: 'OPTATIVA DE PROFUNDIZACION V', semester: 9 },
+  { canonicalCode: 'SS909', externalCode: 'SS904', name: 'TRABAJO DE GRADO II', semester: 9 },
+]);
 
 export function normalizeText(text: string): string {
   return text
@@ -60,209 +107,265 @@ export function normalizeText(text: string): string {
     .trim();
 }
 
-export function parseCurriculumTxt(txt: string): CurriculumSubject[] {
-  const subjects: CurriculumSubject[] = [];
-  for (const rawLine of txt.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    const match = /^([1-9])\s*\|\s*([A-Z0-9]+)\s*\|\s*(.+?)\s*\|\s*(\d+)\s*\|\s*(.+)$/.exec(line);
-    if (!match) continue;
-    const semester = Number(match[1]) as SemesterNumber;
-    const code = match[2].trim().toUpperCase();
-    const name = match[3].trim();
-    const credits = Number(match[4]);
-    const area = match[5].trim() as FormationArea;
-    subjects.push({
-      semester,
-      romanSemester: ROMAN_SEMESTERS[semester],
+type RawPensumEntry = {
+  semestre: number;
+  codigo: string;
+  nombre: string;
+  ht: number | null;
+  hp: number | null;
+  htp: number | null;
+  ponderacionAcademica: number;
+  creditosRequisito: number;
+  prerequisitoCodigo: string | null;
+  prerequisitoNombre: string | null;
+};
+
+type RawPensumDataset = {
+  metadatos: {
+    universidad: string;
+    programa: string;
+    jornada: string;
+    periodosDeclarados: number;
+    periodosDetallados: number[];
+    periodo10: string;
+    totalAsignaturasDocumentadas: number;
+    totalPonderacionAcademicaDocumentada: number;
+    fuente: string;
+  };
+  asignaturas: RawPensumEntry[];
+};
+
+function buildCurriculumFromDataset(dataset: RawPensumDataset): {
+  metadata: CurriculumMetadata;
+  courses: readonly CurriculumCourse[];
+} {
+  const seenCodes = new Set<string>();
+  const preliminaryByCode = new Map<string, RawPensumEntry>();
+
+  for (const row of dataset.asignaturas) {
+    const code = row.codigo.trim().toUpperCase();
+    if (seenCodes.has(code)) {
+      throw new Error(`Código curricular duplicado en PENSUM_UPC_DATOS.json: ${code}`);
+    }
+    seenCodes.add(code);
+    preliminaryByCode.set(code, row);
+  }
+
+  const courses: CurriculumCourse[] = dataset.asignaturas.map(row => {
+    const semester = row.semestre as SemesterNumber;
+    const code = row.codigo.trim().toUpperCase();
+    const name = row.nombre.trim();
+    const prerequisiteCodes: string[] = [];
+    const prerequisiteNames: string[] = [];
+
+    if (row.prerequisitoCodigo) {
+      const prereqCode = row.prerequisitoCodigo.trim().toUpperCase();
+      const target = preliminaryByCode.get(prereqCode);
+      if (!target) {
+        throw new Error(`El prerrequisito ${prereqCode} de ${code} no existe en el pensum.`);
+      }
+      prerequisiteCodes.push(prereqCode);
+      prerequisiteNames.push(target.nombre.trim());
+    }
+
+    return Object.freeze({
       code,
       name,
-      credits,
-      area,
+      displayName: DISPLAY_NAME_ALIASES[code],
+      semester,
+      romanSemester: ROMAN_SEMESTERS[semester],
+      academicWeight: row.ponderacionAcademica,
+      credits: row.ponderacionAcademica,
+      ht: row.ht,
+      hp: row.hp,
+      htp: row.htp,
+      requiredCredits: row.creditosRequisito,
+      prerequisiteCodes,
+      prerequisiteNames,
     });
-  }
-  return subjects;
+  });
+
+  const metadata: CurriculumMetadata = Object.freeze({
+    universidad: dataset.metadatos.universidad,
+    programa: dataset.metadatos.programa,
+    jornada: dataset.metadatos.jornada,
+    periodosDeclarados: dataset.metadatos.periodosDeclarados,
+    periodosDetallados: Object.freeze([...SEMESTER_NUMBERS]),
+    periodo10: dataset.metadatos.periodo10,
+    periodo10Note: 'El período 10 no tiene información en la fuente suministrada',
+    totalAsignaturasDocumentadas: dataset.metadatos.totalAsignaturasDocumentadas,
+    totalPonderacionAcademicaDocumentada: dataset.metadatos.totalPonderacionAcademicaDocumentada,
+    fuente: dataset.metadatos.fuente,
+  });
+
+  return { metadata, courses: Object.freeze(courses) };
 }
 
-export const CURRICULUM_SUBJECTS: readonly CurriculumSubject[] = Object.freeze(parseCurriculumTxt(rawPensumTxt));
+const builtCurriculum = buildCurriculumFromDataset(rawPensumJson as RawPensumDataset);
 
-export function getCurriculumSummary(curriculum: readonly CurriculumSubject[] = CURRICULUM_SUBJECTS) {
-  const bySemester: Record<SemesterNumber, { subjects: number; credits: number; items: CurriculumSubject[] }> = {
-    1: { subjects: 0, credits: 0, items: [] },
-    2: { subjects: 0, credits: 0, items: [] },
-    3: { subjects: 0, credits: 0, items: [] },
-    4: { subjects: 0, credits: 0, items: [] },
-    5: { subjects: 0, credits: 0, items: [] },
-    6: { subjects: 0, credits: 0, items: [] },
-    7: { subjects: 0, credits: 0, items: [] },
-    8: { subjects: 0, credits: 0, items: [] },
-    9: { subjects: 0, credits: 0, items: [] },
-  };
-  let totalCredits = 0;
-  for (const subj of curriculum) {
-    bySemester[subj.semester].subjects += 1;
-    bySemester[subj.semester].credits += subj.credits;
-    bySemester[subj.semester].items.push(subj);
-    totalCredits += subj.credits;
+export const CURRICULUM_METADATA: CurriculumMetadata = builtCurriculum.metadata;
+export const CURRICULUM_COURSES: readonly CurriculumCourse[] = builtCurriculum.courses;
+export const CURRICULUM_SUBJECTS: readonly CurriculumSubject[] = builtCurriculum.courses;
+
+export type CurriculumMemoIndex = {
+  byCode: ReadonlyMap<string, CurriculumCourse>;
+  bySemester: ReadonlyMap<SemesterNumber, readonly CurriculumCourse[]>;
+  searchHaystackByCode: ReadonlyMap<string, string>;
+  dependentsByCode: ReadonlyMap<string, readonly CurriculumCourse[]>;
+};
+
+function createCurriculumIndex(courses: readonly CurriculumCourse[]): CurriculumMemoIndex {
+  const byCode = new Map<string, CurriculumCourse>();
+  const bySemester = new Map<SemesterNumber, CurriculumCourse[]>();
+  const searchHaystackByCode = new Map<string, string>();
+  const dependentsByCode = new Map<string, CurriculumCourse[]>();
+
+  for (const sem of SEMESTER_NUMBERS) {
+    bySemester.set(sem, []);
   }
-  return {
-    totalSemesters: Object.values(bySemester).filter(s => s.subjects > 0).length,
-    totalSubjects: curriculum.length,
-    totalCredits,
+
+  for (const course of courses) {
+    byCode.set(course.code, course);
+    bySemester.get(course.semester)?.push(course);
+
+    const searchParts = [
+      course.code,
+      course.name,
+      course.displayName || '',
+      `SEMESTRE ${course.romanSemester}`,
+      `PERIODO ${course.semester}`,
+    ];
+    searchHaystackByCode.set(course.code, normalizeText(searchParts.join(' ')));
+
+    for (const prereqCode of course.prerequisiteCodes) {
+      const list = dependentsByCode.get(prereqCode) || [];
+      list.push(course);
+      dependentsByCode.set(prereqCode, list);
+    }
+  }
+
+  return Object.freeze({
+    byCode,
     bySemester,
-  };
+    searchHaystackByCode,
+    dependentsByCode,
+  });
 }
 
-export type ValidatedEquivalenceRule = {
-  curriculumCode: string;
-  curriculumName: string;
-  allowedOfferingCodes: readonly string[];
-  acceptedNormalizedNames: readonly string[];
-  hasCodeCollisionWithCurriculum?: string;
-  note: string;
+export const CURRICULUM_INDEX: CurriculumMemoIndex = createCurriculumIndex(CURRICULUM_COURSES);
+
+export type CourseRequirementDescription = {
+  subjectPrerequisites: {
+    code: string;
+    name: string;
+    message: string;
+    rawCodeLabel: string;
+  }[];
+  creditRequirement: {
+    credits: number;
+    message: string;
+    detailNote: string;
+  } | null;
+  hasAnyRequirement: boolean;
+  primaryMessage: string;
 };
 
 /**
- * Explicit, audited equivalences between the official UPC Systems Engineering curriculum
- * (PENSUM_INGENIERIA_SISTEMAS_UPC.txt) and Academusoft schedule offerings.
- * Never links by code alone: both the offering code and normalized subject name must match.
+ * Resolves prerequisites for a course into clear human-readable text using the canonical name
+ * from the memoized index, visually separating subject prerequisites from numeric credit requirements.
  */
-export const VALIDATED_EQUIVALENCES: readonly ValidatedEquivalenceRule[] = Object.freeze([
-  {
-    curriculumCode: 'MT203',
-    curriculumName: 'Lógica Matemática',
-    allowedOfferingCodes: ['MT203', 'MT117'],
-    acceptedNormalizedNames: ['LOGICA MATEMATICA'],
-    note: 'Malla MT203 ↔ Horario Academusoft MT117 (Lógica Matemática, Semestre I)',
-  },
-  {
-    curriculumCode: 'ID301',
-    curriculumName: 'Tech English I',
-    allowedOfferingCodes: ['ID301', 'ID212'],
-    acceptedNormalizedNames: ['TECH ENGLISH I'],
-    note: 'Malla ID301 ↔ Horario Academusoft ID212 (Tech English I, Semestre II)',
-  },
-  {
-    curriculumCode: 'ING300',
-    curriculumName: 'Semillero de Investigación',
-    allowedOfferingCodes: ['ING300', 'SS303'],
-    acceptedNormalizedNames: ['SEMILLERO DE INVESTIGACION'],
-    note: 'Malla ING300 ↔ Horario Academusoft SS303 (Semillero de Investigación, Semestre III)',
-  },
-  {
-    curriculumCode: 'ID302',
-    curriculumName: 'Tech English II',
-    allowedOfferingCodes: ['ID302', 'ID341'],
-    acceptedNormalizedNames: ['TECH ENGLISH II'],
-    note: 'Malla ID302 ↔ Horario Academusoft ID341 (Tech English II, Semestre III)',
-  },
-  {
-    curriculumCode: 'ING301',
-    curriculumName: 'Metodología de Investigación',
-    allowedOfferingCodes: ['ING301'],
-    acceptedNormalizedNames: ['METODOLOGIA DE INVESTIGACION', 'METODOLOGIA DE LA INVESTIGACION'],
-    note: 'Malla ING301 ↔ Horario Academusoft ING301 (variante de preposición "de la" en nombre oficial)',
-  },
-  {
-    curriculumCode: 'SS503',
-    curriculumName: 'Base de Datos Avanzadas',
-    allowedOfferingCodes: ['SS503', 'SS802'],
-    acceptedNormalizedNames: ['BASE DE DATOS AVANZADAS'],
-    hasCodeCollisionWithCurriculum: 'SS802',
-    note: 'Colisión controlada: Malla SS503 (Base de Datos Avanzadas, Sem. V) se publica como SS802 en PDF Academusoft; SS802 en malla es Gestión de Proyectos TI (Sem. VIII).',
-  },
-  {
-    curriculumCode: 'UPC15',
-    curriculumName: 'Cátedra de la Paz',
-    allowedOfferingCodes: ['UPC15', 'UPC23'],
-    acceptedNormalizedNames: ['CATEDRA DE LA PAZ'],
-    note: 'Malla UPC15 ↔ Horario Academusoft UPC23 (Cátedra de la Paz, Semestre V)',
-  },
-  {
-    curriculumCode: 'SS706',
-    curriculumName: 'Cátedra Ambiental y Desarrollo Sostenible',
-    allowedOfferingCodes: ['SS706', 'UPC25'],
-    acceptedNormalizedNames: ['CATEDRA AMBIENTAL Y DESARROLLO SOSTENIBLE'],
-    hasCodeCollisionWithCurriculum: 'SS706',
-    note: 'Colisión controlada: Malla SS706 (Cátedra Ambiental y Desarrollo Sostenible, Sem. VI) se publica como UPC25 en PDF; el código SS706 del PDF corresponde a Ingeniería de Software III (malla SS704).',
-  },
-  {
-    curriculumCode: 'ING303',
-    curriculumName: 'Innovación y Emprendimiento Tecnológico',
-    allowedOfferingCodes: ['ING303', 'SS604'],
-    acceptedNormalizedNames: ['INNOVACION Y EMPRENDIMIENTO TECNOLOGICO'],
-    note: 'Malla ING303 ↔ Horario Academusoft SS604 (Innovación y Emprendimiento Tecnológico, Semestre VI)',
-  },
-  {
-    curriculumCode: 'FC407',
-    curriculumName: 'Formulación y Evaluación de Proyectos de Ingeniería',
-    allowedOfferingCodes: ['FC407'],
-    acceptedNormalizedNames: [
-      'FORMULACION Y EVALUACION DE PROYECTOS DE INGENIERIA',
-      'FORMULACION Y EVALU DE PROYEC EN INGENIERIA',
-      'FORMULACION Y EVALUACION DE PROYECTOS EN INGENIERIA',
-    ],
-    note: 'Malla FC407 ↔ Horario Academusoft FC407 (nombre abreviado en reporte Academusoft)',
-  },
-  {
-    curriculumCode: 'SS700',
-    curriculumName: 'Inteligencia Artificial',
-    allowedOfferingCodes: ['SS700', 'SS702'],
-    acceptedNormalizedNames: ['INTELIGENCIA ARTIFICIAL'],
-    note: 'Malla SS700 ↔ Horario Academusoft SS702 (Inteligencia Artificial, Semestre VII)',
-  },
-  {
-    curriculumCode: 'SS704',
-    curriculumName: 'Ingeniería de Software III',
-    allowedOfferingCodes: ['SS704', 'SS706'],
-    acceptedNormalizedNames: ['INGENIERIA DE SOFTWARE III'],
-    hasCodeCollisionWithCurriculum: 'SS706',
-    note: 'Colisión controlada: Malla SS704 (Ingeniería de Software III, Sem. VII) se publica como SS706 en PDF; SS706 en malla es Cátedra Ambiental y Desarrollo Sostenible (Sem. VI).',
-  },
-  {
-    curriculumCode: 'SS705',
-    curriculumName: 'Tecnologías Inmersivas',
-    allowedOfferingCodes: ['SS705', 'SS707'],
-    acceptedNormalizedNames: ['TECNOLOGIAS INMERSIVAS'],
-    note: 'Malla SS705 ↔ Horario Academusoft SS707 (Tecnologías Inmersivas, Semestre VII)',
-  },
-  {
-    curriculumCode: 'UPC10',
-    curriculumName: 'Cátedra de Emprendimiento',
-    allowedOfferingCodes: ['UPC10', 'UPC24'],
-    acceptedNormalizedNames: ['CATEDRA DE EMPRENDIMIENTO'],
-    note: 'Malla UPC10 ↔ Horario Academusoft UPC24 (Cátedra de Emprendimiento, Semestre VII)',
-  },
-  {
-    curriculumCode: 'ING304',
-    curriculumName: 'Research Project',
-    allowedOfferingCodes: ['ING304', 'SS708'],
-    acceptedNormalizedNames: ['RESEARCH PROJECT'],
-    note: 'Malla ING304 ↔ Horario Academusoft SS708 (Research Project, Semestre VII)',
-  },
-  {
-    curriculumCode: 'SS803',
-    curriculumName: 'Seguridad de la Información',
-    allowedOfferingCodes: ['SS803', 'SS806'],
-    acceptedNormalizedNames: ['SEGURIDAD DE LA INFORMACION'],
-    hasCodeCollisionWithCurriculum: 'SS806',
-    note: 'Colisión controlada: Malla SS803 (Seguridad de la Información, Sem. VIII) se publica como SS806 en PDF; SS806 en malla es Ética Profesional (Sem. VIII).',
-  },
-  {
-    curriculumCode: 'SS806',
-    curriculumName: 'Ética Profesional',
-    allowedOfferingCodes: ['SS806', 'SS811'],
-    acceptedNormalizedNames: ['ETICA PROFESIONAL'],
-    hasCodeCollisionWithCurriculum: 'SS806',
-    note: 'Colisión controlada: Malla SS806 (Ética Profesional, Sem. VIII) se publica como SS811 en PDF; el código SS806 del PDF se usa para Seguridad de la Información (malla SS803).',
-  },
-  {
-    curriculumCode: 'SS807',
-    curriculumName: 'Proyecto de Grado I',
-    allowedOfferingCodes: ['SS807', 'SS812'],
-    acceptedNormalizedNames: ['PROYECTO DE GRADO I'],
-    note: 'Malla SS807 ↔ Horario Academusoft SS812 (Proyecto de Grado I, Semestre VIII)',
-  },
-]);
+export function describeCourseRequirements(
+  course: Pick<CurriculumCourse, 'prerequisiteCodes' | 'prerequisiteNames' | 'requiredCredits'>
+): CourseRequirementDescription {
+  const subjectPrerequisites = course.prerequisiteCodes.map((code, idx) => {
+    const resolvedName =
+      CURRICULUM_INDEX.byCode.get(code.toUpperCase())?.name ||
+      course.prerequisiteNames[idx] ||
+      code;
+    return {
+      code,
+      name: resolvedName,
+      message: `Debes haber aprobado ${resolvedName}`,
+      rawCodeLabel: `R - ${code}`,
+    };
+  });
+
+  const creditRequirement =
+    course.requiredCredits > 0
+      ? {
+          credits: course.requiredCredits,
+          message: `Requiere ${course.requiredCredits} créditos`,
+          detailNote: 'Requisito numérico registrado por Academusoft (informativo)',
+        }
+      : null;
+
+  const hasAnyRequirement = subjectPrerequisites.length > 0 || creditRequirement !== null;
+
+  let primaryMessage = 'Sin prerrequisito indicado';
+  if (subjectPrerequisites.length > 0 && creditRequirement) {
+    primaryMessage = `${subjectPrerequisites.map(p => p.message).join('; ')} · ${creditRequirement.message}`;
+  } else if (subjectPrerequisites.length > 0) {
+    primaryMessage = subjectPrerequisites.map(p => p.message).join('; ');
+  } else if (creditRequirement) {
+    primaryMessage = `${creditRequirement.message} (${creditRequirement.detailNote})`;
+  }
+
+  return {
+    subjectPrerequisites,
+    creditRequirement,
+    hasAnyRequirement,
+    primaryMessage,
+  };
+}
+
+export function formatHoursValue(val: number | null): string {
+  return val === null || val === undefined ? '—' : String(val);
+}
+
+export function getCurriculumSummary(curriculum: readonly CurriculumCourse[] = CURRICULUM_COURSES) {
+  const bySemester: Record<
+    SemesterNumber,
+    { subjects: number; credits: number; academicWeight: number; items: CurriculumCourse[] }
+  > = {
+    1: { subjects: 0, credits: 0, academicWeight: 0, items: [] },
+    2: { subjects: 0, credits: 0, academicWeight: 0, items: [] },
+    3: { subjects: 0, credits: 0, academicWeight: 0, items: [] },
+    4: { subjects: 0, credits: 0, academicWeight: 0, items: [] },
+    5: { subjects: 0, credits: 0, academicWeight: 0, items: [] },
+    6: { subjects: 0, credits: 0, academicWeight: 0, items: [] },
+    7: { subjects: 0, credits: 0, academicWeight: 0, items: [] },
+    8: { subjects: 0, credits: 0, academicWeight: 0, items: [] },
+    9: { subjects: 0, credits: 0, academicWeight: 0, items: [] },
+  };
+  let totalCredits = 0;
+  let totalPrerequisiteRelations = 0;
+  const numericCreditCourses: CurriculumCourse[] = [];
+
+  for (const subj of curriculum) {
+    bySemester[subj.semester].subjects += 1;
+    bySemester[subj.semester].credits += subj.academicWeight;
+    bySemester[subj.semester].academicWeight += subj.academicWeight;
+    bySemester[subj.semester].items.push(subj);
+    totalCredits += subj.academicWeight;
+    totalPrerequisiteRelations += subj.prerequisiteCodes.length;
+    if (subj.requiredCredits > 0) {
+      numericCreditCourses.push(subj);
+    }
+  }
+  return {
+    metadata: CURRICULUM_METADATA,
+    totalSemesters: Object.values(bySemester).filter(s => s.subjects > 0).length,
+    declaredPeriods: CURRICULUM_METADATA.periodosDeclarados,
+    period10Status: CURRICULUM_METADATA.periodo10,
+    period10Note: CURRICULUM_METADATA.periodo10Note,
+    totalSubjects: curriculum.length,
+    totalCredits,
+    totalAcademicWeight: totalCredits,
+    totalPrerequisiteRelations,
+    numericCreditCourses,
+    bySemester,
+  };
+}
 
 export type CurriculumReconciliationResult = {
   items: ReconciledCatalogItem[];
@@ -273,105 +376,77 @@ export type CurriculumReconciliationResult = {
   byOfferingCode: Map<string, ReconciledCatalogItem>;
 };
 
+/**
+ * Reconciles the canonical curriculum (PENSUM_UPC_DATOS.json) against a schedule Catalog.
+ * Never merges automatically when a subject in the catalog has a different code for a similar name
+ * or a colliding code with a different name — instead detects and documents the divergence.
+ */
 export function reconcileCurriculumAndCatalog(
   catalog: Catalog,
-  curriculum: readonly CurriculumSubject[] = CURRICULUM_SUBJECTS
+  curriculum: readonly CurriculumCourse[] = CURRICULUM_COURSES
 ): CurriculumReconciliationResult {
-  const currByCode = new Map<string, CurriculumSubject>();
-  const currByNormName = new Map<string, CurriculumSubject[]>();
+  const currByCode = new Map<string, CurriculumCourse>();
+  const currByNormName = new Map<string, CurriculumCourse[]>();
+
   for (const c of curriculum) {
     currByCode.set(c.code.toUpperCase(), c);
     const norm = normalizeText(c.name);
     currByNormName.set(norm, [...(currByNormName.get(norm) || []), c]);
+    if (c.displayName) {
+      const normAlias = normalizeText(c.displayName);
+      if (normAlias !== norm) {
+        currByNormName.set(normAlias, [...(currByNormName.get(normAlias) || []), c]);
+      }
+    }
   }
 
-  const rulesByCurrCode = new Map<string, ValidatedEquivalenceRule>();
-  for (const r of VALIDATED_EQUIVALENCES) {
-    rulesByCurrCode.set(r.curriculumCode.toUpperCase(), r);
-  }
-
-  type CandidateMatch = {
+  const matchedOfferingByCurrCode = new Map<
+    string,
+    { offering: Subject; origin: 'exact-code-name' | 'exact-code-alias'; note?: string }
+  >();
+  const unmatchedOfferings: {
     offering: Subject;
-    curriculumCode: string;
-    origin: 'exact-code-name' | 'exact-code-alias' | 'validated-equivalence' | 'unique-normalized-name';
-    priority: number;
-    note?: string;
-    collisionCode?: string;
-  };
-
-  const candidatesByCurr = new Map<string, CandidateMatch[]>();
-  const unmatchedOfferings: { offering: Subject; reason: 'extra' | 'review-required'; detail: string }[] = [];
+    reason: 'extra' | 'review-required';
+    detail: string;
+  }[] = [];
   const incidents: ReconciliationIncident[] = [];
 
   for (const offering of catalog.subjects) {
     if (!offering.groups || offering.groups.length === 0) continue;
     const offCode = offering.code.toUpperCase().trim();
     const offNormName = normalizeText(offering.name);
-
-    // 1. Exact code + exact normalized name
     const sameCodeCurr = currByCode.get(offCode);
-    if (sameCodeCurr && normalizeText(sameCodeCurr.name) === offNormName) {
-      const list = candidatesByCurr.get(sameCodeCurr.code) || [];
-      list.push({
-        offering,
-        curriculumCode: sameCodeCurr.code,
-        origin: 'exact-code-name',
-        priority: 1,
-      });
-      candidatesByCurr.set(sameCodeCurr.code, list);
-      continue;
-    }
 
-    // 2. Exact code + validated alias for that same code
-    const sameCodeRule = rulesByCurrCode.get(offCode);
-    if (
-      sameCodeCurr &&
-      sameCodeRule &&
-      sameCodeRule.allowedOfferingCodes.includes(offCode) &&
-      sameCodeRule.acceptedNormalizedNames.includes(offNormName)
-    ) {
-      const list = candidatesByCurr.get(sameCodeCurr.code) || [];
-      list.push({
-        offering,
-        curriculumCode: sameCodeCurr.code,
-        origin: 'exact-code-alias',
-        priority: 2,
-        note: sameCodeRule.note,
-      });
-      candidatesByCurr.set(sameCodeCurr.code, list);
-      continue;
-    }
-
-    // 3. Validated equivalence (different code in schedule PDF, verified code+name pair)
-    const matchedRules = VALIDATED_EQUIVALENCES.filter(
-      r => r.allowedOfferingCodes.includes(offCode) && r.acceptedNormalizedNames.includes(offNormName)
-    );
-    if (matchedRules.length === 1) {
-      const rule = matchedRules[0];
-      const list = candidatesByCurr.get(rule.curriculumCode) || [];
-      list.push({
-        offering,
-        curriculumCode: rule.curriculumCode,
-        origin: 'validated-equivalence',
-        priority: 3,
-        note: rule.note,
-        collisionCode: rule.hasCodeCollisionWithCurriculum,
-      });
-      candidatesByCurr.set(rule.curriculumCode, list);
-      continue;
-    }
-
-    // 4. Check if the offering code collides with a curriculum code, but its name does NOT match!
     if (sameCodeCurr) {
-      // Never link by code alone when the name does not correspond to the curriculum subject!
-      const detail = `Colisión de código detectada: "${offering.code} - ${offering.name}" comparte el código ${sameCodeCurr.code} con "${sameCodeCurr.name}" (Semestre ${sameCodeCurr.romanSemester}), pero el nombre no coincide. Se mantiene sin vincular para revisión.`;
+      const currNormName = normalizeText(sameCodeCurr.name);
+      const aliasNormName = sameCodeCurr.displayName ? normalizeText(sameCodeCurr.displayName) : '';
+
+      if (offNormName === currNormName) {
+        matchedOfferingByCurrCode.set(sameCodeCurr.code, {
+          offering,
+          origin: 'exact-code-name',
+        });
+        continue;
+      }
+
+      if (aliasNormName && offNormName === aliasNormName) {
+        matchedOfferingByCurrCode.set(sameCodeCurr.code, {
+          offering,
+          origin: 'exact-code-alias',
+          note: `Alias de visualización reconocido para ${sameCodeCurr.code} (${sameCodeCurr.name}).`,
+        });
+        continue;
+      }
+
+      // Code exists in pensum, but the name diverges -> do NOT merge automatically!
+      const detail = `Divergencia de código detectada: en el horario aparece "${offering.code} · ${offering.name}", pero en el pensum oficial el código ${sameCodeCurr.code} corresponde a "${sameCodeCurr.name}" (Semestre ${sameCodeCurr.romanSemester}). No se fusiona automáticamente.`;
       unmatchedOfferings.push({
         offering,
         reason: 'review-required',
         detail,
       });
       incidents.push({
-        type: 'review-required',
+        type: 'code-divergence',
         curriculumCode: sameCodeCurr.code,
         curriculumName: sameCodeCurr.name,
         offeringCode: offering.code,
@@ -381,24 +456,29 @@ export function reconcileCurriculumAndCatalog(
       continue;
     }
 
-    // 5. Unique normalized name match (only when offering code is not a colliding curriculum code)
-    const nameMatches = currByNormName.get(offNormName) || [];
-    if (nameMatches.length === 1) {
-      const targetCurr = nameMatches[0];
-      const list = candidatesByCurr.get(targetCurr.code) || [];
-      list.push({
+    // Code is not in pensum; check if name matches a pensum course -> detect divergence without auto-merging!
+    const similarByName = currByNormName.get(offNormName) || [];
+    if (similarByName.length > 0) {
+      const target = similarByName[0];
+      const detail = `Divergencia de código para nombre similar: "${offering.code} · ${offering.name}" comparte nombre con la asignatura del pensum "${target.code} · ${target.name}" (Semestre ${target.romanSemester}). Se registra la divergencia sin fusionar automáticamente.`;
+      unmatchedOfferings.push({
         offering,
-        curriculumCode: targetCurr.code,
-        origin: 'unique-normalized-name',
-        priority: 4,
-        note: `Vinculado por nombre normalizado único: Malla ${targetCurr.code} ↔ Horario ${offering.code}`,
+        reason: 'review-required',
+        detail,
       });
-      candidatesByCurr.set(targetCurr.code, list);
+      incidents.push({
+        type: 'name-similarity-divergence',
+        curriculumCode: target.code,
+        curriculumName: target.name,
+        offeringCode: offering.code,
+        offeringName: offering.name,
+        detail,
+      });
       continue;
     }
 
-    // 6. Otherwise it is an extra subject outside the 62 curriculum subjects
-    const detail = `Asignatura del horario (${offering.code} · ${offering.name}) fuera de las 62 materias de la malla curricular; disponible en "Otras / sin clasificación curricular".`;
+    // Otherwise, it's an extra offering not in the 62 curriculum courses
+    const detail = `Asignatura del horario (${offering.code} · ${offering.name}) fuera de las 62 materias documentadas en el pensum; clasificada en "Otras".`;
     unmatchedOfferings.push({
       offering,
       reason: 'extra',
@@ -412,74 +492,13 @@ export function reconcileCurriculumAndCatalog(
     });
   }
 
-  const winnersByCurr = new Map<string, CandidateMatch>();
-  for (const [currCode, candidates] of candidatesByCurr.entries()) {
-    if (candidates.length === 1) {
-      const win = candidates[0];
-      winnersByCurr.set(currCode, win);
-      if (win.origin === 'validated-equivalence' || win.origin === 'unique-normalized-name') {
-        incidents.push({
-          type: win.collisionCode ? 'code-collision-resolved' : 'code-equivalence',
-          curriculumCode: currCode,
-          curriculumName: currByCode.get(currCode)?.name,
-          offeringCode: win.offering.code,
-          offeringName: win.offering.name,
-          detail: win.note || `Malla ${currCode} vinculada con código de horario ${win.offering.code}.`,
-        });
-      }
-    } else if (candidates.length > 1) {
-      // Multiple offerings in the same catalog claim the same curriculum subject!
-      candidates.sort((a, b) => a.priority - b.priority);
-      const best = candidates[0];
-      const second = candidates[1];
-      if (best.priority < second.priority) {
-        // Keep the strictly higher-priority match (e.g. exact code+name) and send the other to review
-        winnersByCurr.set(currCode, best);
-        for (const extraCand of candidates.slice(1)) {
-          const detail = `Ambigüedad de oferta: "${extraCand.offering.code} - ${extraCand.offering.name}" compite por "${currByCode.get(currCode)?.name}" (${currCode}), que ya tiene coincidencia prioritaria con ${best.offering.code}. Marcado como "No vinculado / Requiere revisión".`;
-          unmatchedOfferings.push({
-            offering: extraCand.offering,
-            reason: 'review-required',
-            detail,
-          });
-          incidents.push({
-            type: 'review-required',
-            curriculumCode: currCode,
-            curriculumName: currByCode.get(currCode)?.name,
-            offeringCode: extraCand.offering.code,
-            offeringName: extraCand.offering.name,
-            detail,
-          });
-        }
-      } else {
-        // Equal-priority ambiguity: do not guess! Mark all competing offerings for manual review.
-        for (const ambCand of candidates) {
-          const detail = `Oferta ambigua: múltiples códigos en el PDF (${candidates.map(c => c.offering.code).join(', ')}) coinciden con "${currByCode.get(currCode)?.name}" (${currCode}). Marcado como "No vinculado / Requiere revisión".`;
-          unmatchedOfferings.push({
-            offering: ambCand.offering,
-            reason: 'review-required',
-            detail,
-          });
-          incidents.push({
-            type: 'review-required',
-            curriculumCode: currCode,
-            curriculumName: currByCode.get(currCode)?.name,
-            offeringCode: ambCand.offering.code,
-            offeringName: ambCand.offering.name,
-            detail,
-          });
-        }
-      }
-    }
-  }
-
   const curriculumItems: ReconciledCatalogItem[] = [];
   const byCurriculumCode = new Map<string, ReconciledCatalogItem>();
   const byOfferingCode = new Map<string, ReconciledCatalogItem>();
 
   for (const curr of curriculum) {
-    const winner = winnersByCurr.get(curr.code);
-    if (winner && winner.offering.groups.length > 0) {
+    const match = matchedOfferingByCurrCode.get(curr.code);
+    if (match && match.offering.groups.length > 0) {
       const item: ReconciledCatalogItem = {
         id: `curr:${curr.code}`,
         kind: 'curriculum',
@@ -488,24 +507,26 @@ export function reconcileCurriculumAndCatalog(
         romanSemester: curr.romanSemester,
         curriculumCode: curr.code,
         curriculumName: curr.name,
+        displayName: curr.displayName,
+        academicWeight: curr.academicWeight,
         credits: curr.credits,
-        area: curr.area,
-        offering: winner.offering,
-        offeringCode: winner.offering.code,
-        offeringName: winner.offering.name,
-        choiceCode: winner.offering.code,
-        matchOrigin: winner.origin,
-        matchNote: winner.note,
+        ht: curr.ht,
+        hp: curr.hp,
+        htp: curr.htp,
+        requiredCredits: curr.requiredCredits,
+        prerequisiteCodes: curr.prerequisiteCodes,
+        prerequisiteNames: curr.prerequisiteNames,
+        offering: match.offering,
+        offeringCode: match.offering.code,
+        offeringName: match.offering.name,
+        choiceCode: curr.code,
+        matchOrigin: match.origin,
+        matchNote: match.note,
       };
       curriculumItems.push(item);
       byCurriculumCode.set(curr.code, item);
-      byOfferingCode.set(winner.offering.code, item);
+      byOfferingCode.set(match.offering.code, item);
     } else {
-      // Unoffered in current schedule period
-      const collidingPdfSubject = catalog.subjects.find(s => s.code.toUpperCase() === curr.code);
-      const collisionWarning = collidingPdfSubject
-        ? `Sin grupos publicados para ${curr.name} en este período. Nota: el código ${curr.code} en el PDF corresponde a "${collidingPdfSubject.name}".`
-        : 'Sin grupos publicados / No disponible para este período';
       const item: ReconciledCatalogItem = {
         id: `curr:${curr.code}`,
         kind: 'curriculum',
@@ -514,14 +535,21 @@ export function reconcileCurriculumAndCatalog(
         romanSemester: curr.romanSemester,
         curriculumCode: curr.code,
         curriculumName: curr.name,
+        displayName: curr.displayName,
+        academicWeight: curr.academicWeight,
         credits: curr.credits,
-        area: curr.area,
+        ht: curr.ht,
+        hp: curr.hp,
+        htp: curr.htp,
+        requiredCredits: curr.requiredCredits,
+        prerequisiteCodes: curr.prerequisiteCodes,
+        prerequisiteNames: curr.prerequisiteNames,
         offering: null,
         offeringCode: null,
         offeringName: null,
-        choiceCode: null,
+        choiceCode: curr.code,
         matchOrigin: 'unoffered',
-        matchNote: collisionWarning,
+        matchNote: 'Sin grupos publicados / No disponible para este período',
       };
       curriculumItems.push(item);
       byCurriculumCode.set(curr.code, item);
@@ -537,8 +565,14 @@ export function reconcileCurriculumAndCatalog(
       romanSemester: null,
       curriculumCode: offering.code,
       curriculumName: offering.name,
+      academicWeight: null,
       credits: null,
-      area: null,
+      ht: null,
+      hp: null,
+      htp: null,
+      requiredCredits: 0,
+      prerequisiteCodes: [],
+      prerequisiteNames: [],
       offering,
       offeringCode: offering.code,
       offeringName: offering.name,
@@ -603,7 +637,7 @@ export function filterReconciledItems(
     if (availability === 'available' && !item.offering) return false;
     if (availability === 'unoffered' && item.offering !== null) return false;
 
-    // 3. Modality filter (when active)
+    // 3. Modality filter
     if (modality === 'campus') {
       if (!item.offering) return false;
       if (!item.offering.groups.some(g => !EXTERNAL_GROUP_RE.test(g.label))) return false;
@@ -612,7 +646,7 @@ export function filterReconciledItems(
       if (!item.offering.groups.some(g => EXTERNAL_GROUP_RE.test(g.label))) return false;
     }
 
-    // 4. Teacher filter (when active)
+    // 4. Teacher filter
     if (normTeacher) {
       if (!item.offering) return false;
       const matchesTeacher = item.offering.groups.some(
@@ -623,18 +657,19 @@ export function filterReconciledItems(
       if (!matchesTeacher) return false;
     }
 
-    // 5. Text search (code, name, area, offering code, teachers)
+    // 5. Text search using memoized curriculum index + dynamic teacher/offering data
     if (normQuery) {
-      const parts = [
+      const memoBase = CURRICULUM_INDEX.searchHaystackByCode.get(item.curriculumCode) || '';
+      const dynamicParts = [
+        memoBase,
         item.curriculumCode,
         item.curriculumName,
-        item.area || '',
-        item.romanSemester ? `SEMESTRE ${item.romanSemester}` : '',
+        item.displayName || '',
         item.offeringCode ?? '',
         item.offeringName ?? '',
         ...(item.offering ? item.offering.groups.map(g => g.teacher || '') : []),
       ];
-      const haystack = normalizeText(parts.join(' '));
+      const haystack = normalizeText(dynamicParts.join(' '));
       if (!haystack.includes(normQuery)) return false;
     }
 
@@ -647,38 +682,42 @@ export type SemesterCountSummary = {
   available: number;
   unoffered: number;
   credits: number;
+  academicWeight: number;
 };
 
 export function computeSemesterCounts(
   items: readonly ReconciledCatalogItem[]
 ): Record<SemesterFilterValue, SemesterCountSummary> {
   const result: Record<SemesterFilterValue, SemesterCountSummary> = {
-    all: { total: 0, available: 0, unoffered: 0, credits: 0 },
-    '1': { total: 0, available: 0, unoffered: 0, credits: 0 },
-    '2': { total: 0, available: 0, unoffered: 0, credits: 0 },
-    '3': { total: 0, available: 0, unoffered: 0, credits: 0 },
-    '4': { total: 0, available: 0, unoffered: 0, credits: 0 },
-    '5': { total: 0, available: 0, unoffered: 0, credits: 0 },
-    '6': { total: 0, available: 0, unoffered: 0, credits: 0 },
-    '7': { total: 0, available: 0, unoffered: 0, credits: 0 },
-    '8': { total: 0, available: 0, unoffered: 0, credits: 0 },
-    '9': { total: 0, available: 0, unoffered: 0, credits: 0 },
-    other: { total: 0, available: 0, unoffered: 0, credits: 0 },
+    all: { total: 0, available: 0, unoffered: 0, credits: 0, academicWeight: 0 },
+    '1': { total: 0, available: 0, unoffered: 0, credits: 0, academicWeight: 0 },
+    '2': { total: 0, available: 0, unoffered: 0, credits: 0, academicWeight: 0 },
+    '3': { total: 0, available: 0, unoffered: 0, credits: 0, academicWeight: 0 },
+    '4': { total: 0, available: 0, unoffered: 0, credits: 0, academicWeight: 0 },
+    '5': { total: 0, available: 0, unoffered: 0, credits: 0, academicWeight: 0 },
+    '6': { total: 0, available: 0, unoffered: 0, credits: 0, academicWeight: 0 },
+    '7': { total: 0, available: 0, unoffered: 0, credits: 0, academicWeight: 0 },
+    '8': { total: 0, available: 0, unoffered: 0, credits: 0, academicWeight: 0 },
+    '9': { total: 0, available: 0, unoffered: 0, credits: 0, academicWeight: 0 },
+    other: { total: 0, available: 0, unoffered: 0, credits: 0, academicWeight: 0 },
   };
 
   for (const item of items) {
     const isAvail = item.offering !== null && item.offering.groups.length > 0;
+    const weight = item.academicWeight || item.credits || 0;
     result.all.total += 1;
     if (isAvail) result.all.available += 1;
     else result.all.unoffered += 1;
-    result.all.credits += item.credits || 0;
+    result.all.credits += weight;
+    result.all.academicWeight += weight;
 
     if (item.kind === 'curriculum' && item.semester) {
       const key = String(item.semester) as SemesterFilterValue;
       result[key].total += 1;
       if (isAvail) result[key].available += 1;
       else result[key].unoffered += 1;
-      result[key].credits += item.credits || 0;
+      result[key].credits += weight;
+      result[key].academicWeight += weight;
     } else {
       result.other.total += 1;
       if (isAvail) result.other.available += 1;
@@ -691,8 +730,6 @@ export function computeSemesterCounts(
 
 /**
  * Resolves a Choice code against a Catalog safely.
- * Supports both direct offering codes in catalog.subjects and canonical curriculum codes
- * that have a validated, non-colliding linked offering in the catalog.
  */
 export function resolveChoiceSubject(
   choice: Pick<Choice, 'code' | 'curriculumCode'>,
@@ -703,7 +740,7 @@ export function resolveChoiceSubject(
     const byCurr = reconciled.byCurriculumCode.get(choice.curriculumCode.toUpperCase());
     if (byCurr) return byCurr.offering || undefined;
   }
-  const direct = catalog.subjects.find(s => s.code === choice.code);
+  const direct = catalog.subjects.find(s => s.code.toUpperCase() === choice.code.toUpperCase());
   if (direct) return direct;
 
   const rec = reconciled || reconcileCurriculumAndCatalog(catalog);
@@ -713,8 +750,8 @@ export function resolveChoiceSubject(
 }
 
 /**
- * Normalizes/migrates persisted or imported choices so they remain compatible
- * with the active catalog without losing valid selections.
+ * Normalizes and deduplicates choices while preserving both offered and unoffered
+ * canonical curriculum selections and validating existing teacher/group preferences.
  */
 export function migrateChoicesForCatalog(
   choices: readonly Choice[],
@@ -727,28 +764,117 @@ export function migrateChoicesForCatalog(
 
   for (const ch of choices) {
     if (!ch || typeof ch.code !== 'string') continue;
-    let targetItem = rec.byOfferingCode.get(ch.code);
-    if (!targetItem && ch.curriculumCode) {
-      const currCandidate = rec.byCurriculumCode.get(ch.curriculumCode.toUpperCase());
-      if (currCandidate?.offering) targetItem = currCandidate;
-    }
-    if (!targetItem) {
-      const currCandidate = rec.byCurriculumCode.get(ch.code.toUpperCase());
-      if (currCandidate?.offering) targetItem = currCandidate;
-    }
+    const cleanCode = ch.code.trim().toUpperCase();
+    if (!cleanCode) continue;
 
-    const effectiveCode = targetItem?.choiceCode || ch.code;
+    const targetItem =
+      rec.byCurriculumCode.get(cleanCode) ||
+      (ch.curriculumCode ? rec.byCurriculumCode.get(ch.curriculumCode.toUpperCase()) : undefined) ||
+      rec.byOfferingCode.get(cleanCode);
+
+    const effectiveCode = targetItem?.choiceCode || cleanCode;
     if (seenCodes.has(effectiveCode)) continue;
     seenCodes.add(effectiveCode);
 
+    const offering = targetItem?.offering || null;
+    let teacherId = ch.teacherId;
+    let teacherMode: Choice['teacherMode'] = ch.teacherMode || 'any';
+    let pinnedGroup = ch.pinnedGroup;
+
+    if (offering) {
+      if (teacherId && !offering.groups.some(g => g.teacherId === teacherId)) {
+        teacherId = undefined;
+        teacherMode = 'any';
+      }
+      if (pinnedGroup && !offering.groups.some(g => g.id === pinnedGroup)) {
+        pinnedGroup = undefined;
+      }
+    }
+
     migrated.push({
-      ...ch,
       code: effectiveCode,
-      curriculumCode: targetItem?.kind === 'curriculum' ? targetItem.curriculumCode : ch.curriculumCode,
+      curriculumCode:
+        targetItem?.kind === 'curriculum' ? targetItem.curriculumCode : ch.curriculumCode || effectiveCode,
+      teacherId,
+      teacherMode,
+      pinnedGroup,
     });
   }
 
   return migrated;
+}
+
+/**
+ * Reconciles the user's centralized selection when a new PDF catalog is imported or switched.
+ * Never discards selected courses; preserves valid group/teacher preferences and produces
+ * explicit warnings if a previously available course lost its groups or a pinned group disappeared.
+ */
+export function reconcileSelectionWithNewCatalog(
+  choices: readonly Choice[],
+  newCatalog: Catalog,
+  previousCatalog?: Catalog
+): { choices: Choice[]; warnings: string[] } {
+  const newRec = reconcileCurriculumAndCatalog(newCatalog);
+  const prevRec = previousCatalog ? reconcileCurriculumAndCatalog(previousCatalog) : null;
+  const warnings: string[] = [];
+  const nextChoices: Choice[] = [];
+  const seen = new Set<string>();
+
+  for (const ch of choices) {
+    const cleanCode = ch.code.trim().toUpperCase();
+    if (!cleanCode || seen.has(cleanCode)) continue;
+    seen.add(cleanCode);
+
+    const newItem =
+      newRec.byCurriculumCode.get(cleanCode) || newRec.byOfferingCode.get(cleanCode);
+    const prevItem = prevRec
+      ? prevRec.byCurriculumCode.get(cleanCode) || prevRec.byOfferingCode.get(cleanCode)
+      : null;
+
+    const courseName = newItem?.curriculumName || prevItem?.curriculumName || cleanCode;
+    const newOffering = newItem?.offering || null;
+    const hadOfferingBefore = Boolean(prevItem?.offering && prevItem.offering.groups.length > 0);
+
+    if (!newOffering) {
+      if (hadOfferingBefore) {
+        warnings.push(
+          `La asignatura ${cleanCode} (${courseName}) tenía grupos en ${previousCatalog?.term || 'el catálogo anterior'}, pero no tiene grupos publicados en ${newCatalog.term}.`
+        );
+      }
+      nextChoices.push({
+        code: cleanCode,
+        curriculumCode: newItem?.curriculumCode || ch.curriculumCode || cleanCode,
+        teacherMode: 'any',
+      });
+      continue;
+    }
+
+    let teacherId = ch.teacherId;
+    let teacherMode: Choice['teacherMode'] = ch.teacherMode || 'any';
+    let pinnedGroup = ch.pinnedGroup;
+
+    if (pinnedGroup && !newOffering.groups.some(g => g.id === pinnedGroup)) {
+      warnings.push(
+        `El grupo fijado en ${cleanCode} (${courseName}) ya no existe en ${newCatalog.term}; selecciona un nuevo grupo.`
+      );
+      pinnedGroup = undefined;
+    }
+
+    if (teacherId && !newOffering.groups.some(g => g.teacherId === teacherId)) {
+      teacherId = undefined;
+      teacherMode = 'any';
+    }
+
+    nextChoices.push({
+      code: newItem?.choiceCode || cleanCode,
+      curriculumCode: newItem?.curriculumCode || ch.curriculumCode || cleanCode,
+      teacherId,
+      teacherMode,
+      pinnedGroup,
+    });
+  }
+
+  return { choices: nextChoices, warnings };
 }
 
 export function parseSemesterFilterParam(raw: unknown): SemesterFilterValue {
@@ -769,11 +895,12 @@ export function formatSemesterParamForUrl(sem: SemesterFilterValue): string | nu
 }
 
 const FILTER_STORAGE_KEY = 'traza-catalog-filters-v1';
+const CENTRAL_SELECTION_STORAGE_KEY = 'traza-central-selection-v1';
+const PENSUM_MODE_STORAGE_KEY = 'traza-pensum-mode-v1';
 
 export function loadPersistedSemesterFilter(): SemesterFilterValue {
   if (typeof window === 'undefined') return 'all';
   try {
-    // 1. Check URL search params (?semestre=III) or hash query (#planificador?semestre=III)
     const searchParams = new URLSearchParams(window.location.search);
     const fromSearch = searchParams.get('semestre') || searchParams.get('semester');
     if (fromSearch) return parseSemesterFilterParam(fromSearch);
@@ -786,7 +913,6 @@ export function loadPersistedSemesterFilter(): SemesterFilterValue {
       if (fromHash) return parseSemesterFilterParam(fromHash);
     }
 
-    // 2. Fallback to localStorage if present and valid
     const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
     if (!raw) return 'all';
     const parsed = JSON.parse(raw) as { semester?: unknown };
@@ -800,20 +926,92 @@ export function persistSemesterFilter(semester: SemesterFilterValue): void {
   if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({ semester }));
-  } catch {
-    // Ignore storage quota or private-mode restrictions
-  }
-  try {
     const url = new URL(window.location.href);
-    const paramValue = formatSemesterParamForUrl(semester);
-    if (paramValue) {
-      url.searchParams.set('semestre', paramValue);
+    const formatted = formatSemesterParamForUrl(semester);
+    if (formatted) {
+      url.searchParams.set('semestre', formatted);
     } else {
       url.searchParams.delete('semestre');
       url.searchParams.delete('semester');
     }
-    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    window.history.replaceState(window.history.state, '', url.toString());
   } catch {
-    // Ignore history API errors in non-browser test environments
+    // Ignore storage/history errors in restricted environments
+  }
+}
+
+export function loadPersistedPensumMode(): PensumSelectionMode {
+  if (typeof window === 'undefined') return 'all';
+  try {
+    const raw = window.localStorage.getItem(PENSUM_MODE_STORAGE_KEY);
+    if (raw === 'semester' || raw === 'all') return raw;
+    return 'all';
+  } catch {
+    return 'all';
+  }
+}
+
+export function persistPensumMode(mode: PensumSelectionMode): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(PENSUM_MODE_STORAGE_KEY, mode);
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+/**
+ * Loads the centralized course selection from localStorage with safe migration
+ * from older formats (array of string codes or legacy Choice objects).
+ */
+export function loadCentralSelection(catalog: Catalog): Choice[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(CENTRAL_SELECTION_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    let rawList: unknown[] = [];
+    if (Array.isArray(parsed)) {
+      rawList = parsed;
+    } else if (
+      parsed &&
+      typeof parsed === 'object' &&
+      'choices' in parsed &&
+      Array.isArray((parsed as { choices: unknown[] }).choices)
+    ) {
+      rawList = (parsed as { choices: unknown[] }).choices;
+    }
+
+    const candidates: Choice[] = [];
+    for (const item of rawList) {
+      if (typeof item === 'string') {
+        candidates.push({ code: item.trim().toUpperCase(), curriculumCode: item.trim().toUpperCase(), teacherMode: 'any' });
+      } else if (item && typeof item === 'object' && 'code' in item && typeof (item as { code: unknown }).code === 'string') {
+        const c = item as Choice;
+        candidates.push({
+          code: c.code.trim().toUpperCase(),
+          curriculumCode: c.curriculumCode ? c.curriculumCode.trim().toUpperCase() : c.code.trim().toUpperCase(),
+          teacherId: c.teacherId,
+          teacherMode: c.teacherMode || 'any',
+          pinnedGroup: c.pinnedGroup,
+        });
+      }
+    }
+
+    return migrateChoicesForCatalog(candidates, catalog);
+  } catch {
+    return [];
+  }
+}
+
+export function persistCentralSelection(choices: readonly Choice[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(
+      CENTRAL_SELECTION_STORAGE_KEY,
+      JSON.stringify({ version: 1, updatedAt: Date.now(), choices })
+    );
+  } catch {
+    // Ignore storage errors
   }
 }

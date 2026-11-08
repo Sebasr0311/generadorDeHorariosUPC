@@ -1,0 +1,17 @@
+ENTREGA A LA CLI — TRAZA / MODULO MI PENSUM
+
+ARCHIVOS
+- PROMPT_CLI_TRAZA_MODULO_MI_PENSUM.txt: instrucciones para ejecutar sobre el repositorio existente.
+- PENSUM_COMPLETO_ING_SISTEMAS_UPC.txt: lista legible y completa de lo suministrado, con requisito explicado por nombre.
+- PENSUM_UPC_DATOS.json: dataset estructurado para implementar el catálogo sin errores de transcripción.
+
+PASOS
+1. Extrae este paquete dentro del directorio de trabajo o copia los 3 archivos al repositorio de Traza (por ejemplo en docs/insumos/).
+2. Abre la CLI situada en el directorio raíz del repositorio.
+3. Pega el contenido de PROMPT_CLI_TRAZA_MODULO_MI_PENSUM.txt y solicita que lea también los otros dos archivos.
+4. Solicita la ejecución de pruebas, compilación y capturas responsive reales antes del PR y la publicación en GitHub Pages.
+
+NOTAS
+- La consulta fuente declara 10 períodos, pero solo contiene las asignaturas de 1 a 9. No inventar décimo.
+- Se documentan exactamente 62 asignaturas, 155 unidades de Ponderación Académica y 11 materias con requisito numérico de créditos.
+- Este paquete NO modifica automáticamente el repositorio ni prueba la app existente.

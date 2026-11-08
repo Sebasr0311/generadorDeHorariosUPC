@@ -129,7 +129,9 @@ test('selección y generación de horario desde catálogo de ejemplo', async ({ 
   await page.goto('./');
   await page.getByRole('button', { name: /crear mi horario gratis/i }).click();
   await expect(page.getByRole('heading', { name: /construye tu horario/i })).toBeVisible();
+  await page.getByRole('button', { name: /seleccionar materias/i }).first().click();
   await page.getByRole('button', { name: /ESTRUCTURA DE DATOS/i }).first().click();
+  await page.getByRole('button', { name: /listo, ver horario/i }).click();
   await expect(page.getByRole('heading', { name: /combinaciones disponibles/i })).toBeVisible();
   await expect(page.getByText(/opción 1/i).first()).toBeVisible();
 
@@ -167,8 +169,10 @@ test('selección y generación de horario desde catálogo de ejemplo', async ({ 
   }
 
   // Verificar validación de no cruce entre materias al elegir grupo:
+  await page.getByRole('button', { name: /editar materias/i }).click();
   await page.getByRole('button', { name: /INVESTIGACION DE OPERACIONES/i }).first().click();
   await page.getByRole('button', { name: /MECANICA/i }).first().click();
+  await page.getByRole('button', { name: /listo, ver horario/i }).click();
   await page
     .getByLabel(/Grupo para INVESTIGACION DE OPERACIONES/i)
     .selectOption('AI432::01-CAMPUS');
@@ -189,7 +193,9 @@ test('selección y generación de horario desde catálogo de ejemplo', async ({ 
 
 test('exportación PDF desde horario válido', async ({ page }) => {
   await page.goto('./#planificador');
+  await page.getByRole('button', { name: /seleccionar materias/i }).first().click();
   await page.getByRole('button', { name: /ESTRUCTURA DE DATOS/i }).first().click();
+  await page.getByRole('button', { name: /listo, ver horario/i }).click();
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('button', { name: /^PDF$/i }).click(),
@@ -400,10 +406,12 @@ test('botones legibles (contraste >= 4.5 y texto visible) y sin textos o iconos 
   await page.goto('./#planificador');
   expect(await checkVisualIntegrity()).toEqual([]);
 
+  await page.getByRole('button', { name: /seleccionar materias/i }).first().click();
   const rows = page.locator('.subject-row');
   for (let i = 0; i < 5; i++) {
     await rows.nth(i).click();
   }
+  await page.getByRole('button', { name: /listo, ver horario/i }).click();
   await expect(page.getByText(/opción 1/i).first()).toBeVisible();
   expect(await checkVisualIntegrity()).toEqual([]);
 
@@ -445,8 +453,10 @@ test('objetivos táctiles de al menos 32px en teléfonos', async ({ page }, test
   await page.goto('./#pensum');
   expect(await smallTargets()).toEqual([]);
   await page.goto('./#planificador');
+  await page.getByRole('button', { name: /seleccionar materias/i }).first().click();
   const rows = page.locator('.subject-row');
   for (let i = 0; i < 3; i++) await rows.nth(i).click();
+  await page.getByRole('button', { name: /listo, ver horario/i }).click();
   await expect(page.getByText(/opción 1/i).first()).toBeVisible();
   await page.getByRole('button', { name: /guardar/i }).first().click();
   expect(await smallTargets()).toEqual([]);
@@ -456,6 +466,7 @@ test('filtro por semestre curricular en el planificador (I-IX y Todos), selecci�
   page,
 }) => {
   await page.goto('./#planificador');
+  await page.getByRole('button', { name: /seleccionar materias/i }).first().click();
 
   const todosBtn = page.getByRole('button', { name: /^Todos los semestres/i });
   await expect(todosBtn).toHaveAttribute('aria-pressed', 'true');
@@ -484,7 +495,6 @@ test('filtro por semestre curricular en el planificador (I-IX y Todos), selecci�
   await expect(page.locator('.selected-subjects-summary')).toContainText(
     '2 seleccionadas · 6 cr. · 2 semestres'
   );
-  await expect(page.getByText(/opción 1/i).first()).toBeVisible();
 
   // Volver a Semestre III: ambas permanecen seleccionadas
   await sem3Btn.click();
@@ -512,6 +522,15 @@ test('filtro por semestre curricular en el planificador (I-IX y Todos), selecci�
   await expect(todosBtn).toHaveAttribute('aria-pressed', 'true');
   await expect(searchInput).toHaveValue('');
   await expect(page.locator('.selected-subjects-summary')).toContainText('2 seleccionadas · 6 cr.');
+
+  // Cerrar el modal y verificar que en el planificador aparece "Opción 1"
+  await page.getByRole('button', { name: /listo, ver horario/i }).click();
+  await expect(page.getByText(/opción 1/i).first()).toBeVisible();
+
+  // El botón "Editar materias" reabre el modal
+  await page.getByRole('button', { name: /editar materias/i }).click();
+  await expect(page.getByRole('heading', { name: /seleccionar materias/i })).toBeVisible();
+  await page.getByRole('button', { name: /listo, ver horario/i }).click();
 
   for (const w of [320, 375, 390, 430, 768, 1024, 1280, 1440]) {
     await page.setViewportSize({ width: w, height: 800 });

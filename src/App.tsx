@@ -27,7 +27,6 @@ import {
   Menu,
   Pencil,
   RotateCcw,
-  Search,
   ShieldCheck,
   Sparkles,
   Trash2,
@@ -63,9 +62,7 @@ import { loadCatalogs, loadPlans, saveCatalog, savePlan, deletePlan } from './li
 import { exportExcel, exportHtml, exportJson, exportPdf } from './lib/exporters';
 import { ImportDialog } from './components/ImportDialog';
 import { PensumPage } from './components/PensumPage';
-import { SemesterFilter } from './components/SemesterFilter';
-import { SelectedSubjectsSummary } from './components/SelectedSubjectsSummary';
-import { SubjectCatalogList } from './components/SubjectCatalogList';
+import { CourseSelectorModal } from './components/CourseSelectorModal';
 import WeeklyCalendar from './components/WeeklyCalendar';
 import { ShinyText } from './components/ShinyText';
 import { SpotlightCard } from './components/SpotlightCard';
@@ -991,7 +988,7 @@ function Planner({
   const [calendarViewMode, setCalendarViewMode] = useState<'grid' | 'agenda'>('grid');
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [editingPlanName, setEditingPlanName] = useState('');
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [selectorOpen, setSelectorOpen] = useState(false);
   const controlPanelRef = useRef<HTMLDivElement>(null);
   const resultsPanelRef = useRef<HTMLElement>(null);
   const calendarPanelRef = useRef<HTMLElement>(null);
@@ -1000,8 +997,7 @@ function Planner({
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
+        setSelectorOpen(true);
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -1250,6 +1246,13 @@ function Planner({
             <span className="catalog-header-tag">
               <span /> {catalog.term}
             </span>
+            <button
+              type="button"
+              className="btn-outline small header-select-courses"
+              onClick={() => setSelectorOpen(true)}
+            >
+              <BookOpen size={15} /> Seleccionar materias
+            </button>
             <button type="button" className="header-home" onClick={onOpenPensum}>
               <GraduationCap size={16} /> Mi pensum
             </button>
@@ -1264,92 +1267,28 @@ function Planner({
           </div>
         </header>
 
-        <div className="planner-body">
-          <aside className="side-panel" aria-label="Materias disponibles">
-            <div className="side-title">
-              <div>
-                <div className="eyebrow">PASO 01</div>
-                <h2>Mis asignaturas</h2>
-                <p>Selecciona las que quieres cursar.</p>
-              </div>
-              <div className="selected-number">{choices.length}</div>
-            </div>
-            <label className="sidebar-search">
-              <Search size={17} />
-              <input
-                ref={searchInputRef}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Buscar materia, código o docente"
-                aria-label="Buscar materia o docente"
-              />
-              {search ? (
-                <button
-                  type="button"
-                  className="sidebar-search-clear"
-                  onClick={() => setSearch('')}
-                  aria-label="Borrar búsqueda"
-                >
-                  <X size={14} />
-                </button>
-              ) : (
-                <span>⌘ K</span>
-              )}
-            </label>
-            <SemesterFilter
-              value={semester}
-              onChange={handleSemesterChange}
-              counts={semesterCounts}
-              hasActiveFilters={hasActiveFilters}
-              onClearFilters={clearCatalogFilters}
-              catalogTerm={catalog.term}
-            />
-            <SelectedSubjectsSummary
-              selectedItems={selectedReconciledItems}
-              activeSemester={semester}
-              onRemove={onRemoveChoice}
-            />
-            <div className="catalog-card">
-              <small>CATÁLOGO ACADÉMICO · HORARIO {catalog.term}</small>
-              <select
-                aria-label="Elegir catálogo"
-                value={catalog.id}
-                onChange={e => onSelectCatalog(e.target.value)}
-              >
-                {catalogs.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-              <div>
-                <span>{subjectCount(catalog)} en oferta</span>
-                <span>·</span>
-                <span>62 en pensum</span>
-                <span>·</span>
-                <span>{groupCount(catalog)} grupos</span>
-              </div>
-            </div>
-            <SubjectCatalogList
-              items={filteredItems}
-              selectedChoiceCodes={selectedChoiceCodes}
-              semester={semester}
-              hasActiveFilters={hasActiveFilters}
-              onToggle={onToggleItem}
-              onSelectAllSemesters={() => handleSemesterChange('all')}
-              onClearFilters={clearCatalogFilters}
-            />
-            <div className="side-footer">
-              <div className="privacy-small">
-                <ShieldCheck size={17} />
-                <span>
-                  Privado y sin registro.
-                  <small>Tus datos no salen de este navegador.</small>
-                </span>
-              </div>
-            </div>
-          </aside>
+        <CourseSelectorModal
+          open={selectorOpen}
+          onOpenChange={setSelectorOpen}
+          catalog={catalog}
+          catalogs={catalogs}
+          onSelectCatalog={onSelectCatalog}
+          items={filteredItems}
+          selectedChoiceCodes={selectedChoiceCodes}
+          selectedReconciledItems={selectedReconciledItems}
+          semester={semester}
+          onSemesterChange={handleSemesterChange}
+          semesterCounts={semesterCounts}
+          search={search}
+          onSearchChange={setSearch}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={clearCatalogFilters}
+          onToggleItem={onToggleItem}
+          onRemoveChoice={onRemoveChoice}
+          choicesCount={choices.length}
+        />
 
+        <div className="planner-body">
           <main className="planner-main">
             <div className="planner-welcome">
               <div>
@@ -1365,11 +1304,8 @@ function Planner({
                 <button
                   type="button"
                   className="planner-stat-btn"
-                  onClick={() => {
-                    setTab('courses');
-                    controlPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                  title="Ir a materias elegidas"
+                  onClick={() => setSelectorOpen(true)}
+                  title="Abrir selector de materias"
                 >
                   <strong>
                     <CountUp to={choices.length} duration={0.6} trigger="load" />
@@ -1522,6 +1458,13 @@ function Planner({
                     </p>
                   </div>
                   <div className="panel-heading-actions">
+                    <button
+                      type="button"
+                      className="btn-outline small"
+                      onClick={() => setSelectorOpen(true)}
+                    >
+                      <Pencil size={14} /> Editar materias
+                    </button>
                     {choices.length > 0 && (
                       <button
                         type="button"
@@ -1543,16 +1486,24 @@ function Planner({
                     </div>
                     <h3>Empieza seleccionando materias</h3>
                     <p>
-                      Escoge asignaturas desde la lista de la izquierda o explora la malla completa
-                      en «Mi pensum».
+                      Abre el catálogo académico para elegir las asignaturas que deseas cursar este semestre.
                     </p>
-                    <button
-                      type="button"
-                      className="btn-outline small"
-                      onClick={onOpenPensum}
-                    >
-                      <GraduationCap size={15} /> Ir a Mi pensum
-                    </button>
+                    <div className="selection-empty-actions">
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={() => setSelectorOpen(true)}
+                      >
+                        <BookOpen size={16} /> Seleccionar materias
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-outline small"
+                        onClick={onOpenPensum}
+                      >
+                        <GraduationCap size={15} /> Ir a Mi pensum
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="choice-grid">
@@ -2256,6 +2207,13 @@ function Planner({
             <span>{computed.schedules.length} combinaciones</span>
           </div>
           <div className="mobile-selection-actions">
+            <button
+              type="button"
+              className="btn-outline small"
+              onClick={() => setSelectorOpen(true)}
+            >
+              <Pencil size={14} /> {choices.length === 0 ? 'Elegir' : 'Editar'}
+            </button>
             <button
               type="button"
               className="btn-outline small"

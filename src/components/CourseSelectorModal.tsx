@@ -87,8 +87,9 @@ export function CourseSelectorModal({
             </Dialog.Description>
           </div>
 
-          <div className="course-modal-controls">
-            <div className="course-modal-top-row">
+          <div className="course-modal-scrollable">
+            <div className="course-modal-controls">
+              <div className="course-modal-top-row">
               <label className="sidebar-search course-modal-search">
                 <Search size={17} />
                 <input
@@ -154,8 +155,9 @@ export function CourseSelectorModal({
               onClearFilters={onClearFilters}
             />
           </div>
+        </div>
 
-          <div className="course-modal-footer">
+        <div className="course-modal-footer">
             <div className="course-modal-status">
               <CheckCircle2 size={16} />
               <span>

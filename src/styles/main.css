@@ -3443,6 +3443,16 @@ button:disabled,
   color: #64748b;
 }
 
+.course-modal-scrollable {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-width: thin;
+}
+
 .course-modal-controls {
   padding: 14px 28px 12px;
   background: #f8fafc;
@@ -3478,12 +3488,8 @@ button:disabled,
 
 .course-modal-list-wrap {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
   padding: 16px 28px;
   background: #ffffff;
-  scrollbar-color: #cbd5e1 transparent;
-  scrollbar-width: thin;
 }
 
 .course-modal-list-wrap .subject-list {

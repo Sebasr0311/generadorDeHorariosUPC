@@ -1463,7 +1463,7 @@ function Planner({
                       className="btn-outline small"
                       onClick={() => setSelectorOpen(true)}
                     >
-                      <Pencil size={14} /> Editar materias
+                      <Pencil size={14} /> Editar materias{choices.length > 0 ? ` (${choices.length})` : ''}
                     </button>
                     {choices.length > 0 && (
                       <button

@@ -1,3 +1,4 @@
+import { inferTermFromText } from './term';
 import {getDocument,GlobalWorkerOptions} from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type {Catalog,Day,Group,Session,Subject} from './types';
@@ -138,14 +139,17 @@ export async function parseAcademusoftPdf(file:File):Promise<{catalog:Catalog;wa
   const pdf=await getDocument({data:bytes}).promise;
   try{
     if(pdf.numPages>120)throw Error('El PDF tiene demasiadas páginas. Máximo 120.');
-    const pages:Line[][]=[];
+    const pages:Line[][]=[];const allText:string[]=[];
     for(let n=1;n<=pdf.numPages;n++){
       const page=await pdf.getPage(n);const content=await page.getTextContent();
       const height=page.getViewport({scale:1}).height;
       const items=content.items.filter(i=>'str' in i).map(i=>{const t=i as {str:string;transform:number[]};return {str:t.str,x:t.transform[4],y:height-t.transform[5]};});
+      for(const it of items)allText.push(it.str);
       pages.push(organize(items,page.view[2]-page.view[0]));
     }
     const parsed=buildCatalog(pages,`PDF · ${file.name}`);
+    const detected=inferTermFromText(allText);
+    if(detected)Object.assign(parsed.catalog,{term:detected.term,period:detected.period,label:`${detected.term} · Catálogo importado`});
     // Stable opaque IDs allow safe comparisons between semesters.
     const allRawIds=[...new Set(parsed.catalog.subjects.flatMap(s=>s.groups.map(g=>g.teacherId)).filter((id):id is string=>Boolean(id)))];
     const opaque=new Map(await Promise.all(allRawIds.map(async raw=>[raw,await teacherKey(raw)] as const)));

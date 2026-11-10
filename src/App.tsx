@@ -74,9 +74,25 @@ import StarBorder from './components/reactbits/StarBorder/StarBorder';
 import CountUp from './components/reactbits/CountUp/CountUp';
 import ClickSpark from './components/reactbits/ClickSpark/ClickSpark';
 import { HeroScheduleDemo } from './components/landing/HeroScheduleDemo';
+import { pickActiveCatalogId } from './lib/term';
 import sample from './data/catalogo-base.json';
 
 const initial = sample as Catalog;
+const ACTIVE_CATALOG_KEY = 'traza.activeCatalogId';
+const readActiveCatalogId = () => {
+  try {
+    return window.localStorage.getItem(ACTIVE_CATALOG_KEY);
+  } catch {
+    return null;
+  }
+};
+const writeActiveCatalogId = (id: string) => {
+  try {
+    window.localStorage.setItem(ACTIVE_CATALOG_KEY, id);
+  } catch {
+    /* storage unavailable: the choice lasts for this session only */
+  }
+};
 const subjectCount = (c: Catalog) => c.subjects.length;
 const groupCount = (c: Catalog) => c.subjects.reduce((n, s) => n + s.groups.length, 0);
 const sourceText = (source: string) =>
@@ -307,7 +323,7 @@ function Landing({
             className="feature-grid"
             distance={24}
             blur={4}
-            initialOpacity={0.25}
+            animateOpacity={false}
             duration={0.7}
             ease="expo.out"
             stagger={0.08}
@@ -399,7 +415,8 @@ function Landing({
             <AnimatedContent
               className="steps-grid"
               distance={18}
-              initialOpacity={0.25}
+              blur={3}
+              animateOpacity={false}
               duration={0.6}
               ease="power3.out"
               stagger={0.1}
@@ -513,7 +530,7 @@ function Landing({
             className="cta-inner"
             distance={16}
             scale={0.98}
-            initialOpacity={0.25}
+            animateOpacity={false}
             duration={0.7}
             ease="expo.out"
             stagger={0.08}
@@ -2164,18 +2181,30 @@ export default function App() {
   const [choices, setChoices] = useState<Choice[]>(() => loadCentralSelection(initial));
   const [saved, setSaved] = useState<SavedPlan[]>([]);
   const [message, setMessage] = useState('');
+  const [catalogsReady, setCatalogsReady] = useState(false);
 
   useEffect(() => {
     let live = true;
     void Promise.all([loadCatalogs(), loadPlans()])
       .then(([stored, plans]) => {
         if (live) {
-          setCatalogs([initial, ...stored.filter(c => c.id !== initial.id)]);
+          const all = [initial, ...stored.filter(c => c.id !== initial.id)];
+          const nextId = pickActiveCatalogId(all, readActiveCatalogId(), initial.id);
+          const nextCatalog = all.find(c => c.id === nextId);
+          setCatalogs(all);
           setSaved(plans);
+          if (nextCatalog && nextId !== initial.id) {
+            setActiveId(nextId);
+            setChoices(
+              current => reconcileSelectionWithNewCatalog(current, nextCatalog, initial).choices
+            );
+          }
+          setCatalogsReady(true);
         }
       })
       .catch(() => {
         if (live) {
+          setCatalogsReady(true);
           setMessage(
             'No se pudo acceder al almacenamiento local; podrás seguir planificando en esta sesión.'
           );
@@ -2189,6 +2218,10 @@ export default function App() {
   useEffect(() => {
     persistCentralSelection(choices);
   }, [choices]);
+
+  useEffect(() => {
+    if (catalogsReady) writeActiveCatalogId(activeId);
+  }, [activeId, catalogsReady]);
 
   useEffect(() => {
     const listener = () => {
@@ -2289,10 +2322,16 @@ export default function App() {
     setActiveId(c.id);
     setChoices(reconciledChoices);
     const baseMsg = `Se cargó ${c.term}: ${subjectCount(c)} materias y ${groupCount(c)} grupos. Revisa las advertencias antes de matricular.`;
-    setMessage(warnings.length > 0 ? `${baseMsg} ${warnings.join(' ')}` : baseMsg);
-    void saveCatalog(c).catch(() =>
-      setMessage('El catálogo se cargó, pero no pudo guardarse en este navegador.')
-    );
+    const fullMsg = warnings.length > 0 ? `${baseMsg} ${warnings.join(' ')}` : baseMsg;
+    setMessage(`Guardando ${c.term} en este navegador…`);
+    // Confirm only once the catalog is persisted, so a reload never falls back to the previous term.
+    void saveCatalog(c)
+      .then(() => setMessage(fullMsg))
+      .catch(() =>
+        setMessage(
+          `Se cargó ${c.term}, pero no pudo guardarse en este navegador: al recargar volverás al catálogo anterior.`
+        )
+      );
   }
 
   async function handleSavePlan(plan: SavedPlan) {

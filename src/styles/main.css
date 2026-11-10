@@ -6140,8 +6140,8 @@ summary:focus-visible {
 }
 
 .demo-switch button {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -6308,4 +6308,102 @@ summary:focus-visible {
   .mock-event small {
     display: none;
   }
+}
+
+/* Import dialog: term sequence check and teacher inference summary */
+.term-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid;
+}
+
+.term-check svg {
+  margin-top: 1px;
+}
+
+.term-check strong {
+  display: block;
+  font-size: 12.5px;
+  margin-bottom: 3px;
+}
+
+.term-check p {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+.term-check.ok {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.term-check.risk {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #78350f;
+}
+
+.term-check.risk svg {
+  color: #b45309;
+}
+
+.teacher-summary {
+  display: grid;
+  gap: 7px;
+  margin: 0 0 12px;
+  padding: 11px 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.teacher-summary > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11.5px;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.teacher-summary b {
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.teacher-summary > div:nth-child(1) svg {
+  color: #047857;
+}
+
+.teacher-summary svg {
+  color: var(--blue);
+}
+
+.teacher-summary > div:last-child svg {
+  color: #64748b;
+}
+
+.missing-subjects {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0 0 12px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.missing-subjects svg {
+  margin-top: 2px;
+  color: #64748b;
+}
+
+.missing-subjects b {
+  color: #0f172a;
 }

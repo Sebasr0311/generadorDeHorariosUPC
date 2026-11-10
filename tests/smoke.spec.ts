@@ -6,7 +6,7 @@ test('landing pública, sección Mi pensum, navegación y ausencia de desbordami
   await page.goto('./');
   await expect(page.getByRole('heading', { level: 1, name: /tu semestre/i })).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: /Explora el pensum, elige materias y genera horarios/i })
+    page.getByRole('heading', { name: /Empieza por tu pensum/i })
   ).toBeVisible();
   await expect(page.getByText('De un PDF a tu horario ideal', { exact: false })).toBeVisible();
   await expect(page.getByText('No es un sitio oficial', { exact: false })).toBeVisible();

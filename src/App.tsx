@@ -32,7 +32,6 @@ import {
   Trash2,
   Users,
   X,
-  Zap,
 } from 'lucide-react';
 import type {
   Catalog,
@@ -74,6 +73,7 @@ import Magnet from './components/reactbits/Magnet/Magnet';
 import StarBorder from './components/reactbits/StarBorder/StarBorder';
 import CountUp from './components/reactbits/CountUp/CountUp';
 import ClickSpark from './components/reactbits/ClickSpark/ClickSpark';
+import { HeroScheduleDemo } from './components/landing/HeroScheduleDemo';
 import sample from './data/catalogo-base.json';
 
 const initial = sample as Catalog;
@@ -145,9 +145,6 @@ function Landing({
           <span className="nav-tag">
             <span /> Para estudiantes UPC
           </span>
-          <button className="btn-outline small" onClick={onOpenPensum}>
-            <GraduationCap size={15} /> Mi pensum
-          </button>
           <button className="btn-primary small" onClick={onStart}>
             Abrir planificador <ArrowRight size={16} />
           </button>
@@ -180,9 +177,6 @@ function Landing({
             />
           </div>
           <div className="hero-copy">
-            <div className="pill-eyebrow">
-              <span className="eyebrow-star">✦</span> HECHO PARA INGENIERÍA DE SISTEMAS · UPC
-            </div>
             <h1>
               <BlurText
                 as="span"
@@ -200,8 +194,8 @@ function Landing({
               </span>
             </h1>
             <p className="hero-description">
-              Olvídate de comparar grupos a mano. Explora tu pensum, elige tus materias, encuentra
-              combinaciones sin cruces y arma un horario que sí se adapte a tu vida.
+              Para Ingeniería de Sistemas de la UPC. Elige tus materias y Traza te muestra todas las
+              combinaciones de grupos sin cruces, para que escojas la semana que mejor te funcione.
             </p>
             <div className="hero-ctas">
               <Magnet
@@ -218,19 +212,12 @@ function Landing({
                 <GraduationCap size={17} /> Explorar mi pensum
               </button>
             </div>
-            <div className="hero-meta">
-              <div className="avatar-stack">
-                <span>IS</span>
-                <span>UPC</span>
-                <span>✓</span>
-              </div>
-              <div>
-                <strong>Un horario a tu ritmo</strong>
-                <small>Sin registro, sin pagos, sin complicaciones</small>
-              </div>
-            </div>
+            <p className="hero-meta">
+              <CloudOff size={16} aria-hidden="true" />
+              Gratis y sin registro. Tus datos se quedan en tu navegador.
+            </p>
           </div>
-          <HeroIllustration />
+          <HeroScheduleDemo />
         </section>
 
         <section className="trust-strip container" aria-label="Características">
@@ -238,10 +225,11 @@ function Landing({
             <CheckCircle2 size={17} /> Sin cruces de horario
           </span>
           <span>
-            <GraduationCap size={17} /> 62 materias y prerrequisitos claros
+            <GraduationCap size={17} /> {CURRICULUM_METADATA.totalAsignaturasDocumentadas} materias
+            con sus prerrequisitos
           </span>
           <span>
-            <CloudOff size={17} /> Tus datos permanecen en tu navegador
+            <ShieldCheck size={17} /> Docentes confirmados y probables, bien diferenciados
           </span>
           <span>
             <FileDown size={17} /> Exportación a PDF y Excel
@@ -251,26 +239,23 @@ function Landing({
         <section className="pensum-landing-section section container" id="pensum-section">
           <div className="pensum-landing-card">
             <div className="pensum-landing-copy">
-              <div className="eyebrow">MALLA CURRICULAR INTERACTIVA · MI PENSUM</div>
-              <h2>Explora el pensum, elige materias y genera horarios.</h2>
+              <h2>Empieza por tu pensum y sabrás qué puedes ver este semestre.</h2>
               <p>
-                Recorre las {CURRICULUM_METADATA.totalAsignaturasDocumentadas} asignaturas
-                documentadas ({CURRICULUM_METADATA.totalPonderacionAcademicaDocumentada} unidades de
-                ponderación académica en los períodos I a IX) mediante búsqueda global o por
-                semestre. Consulta prerrequisitos explicados por nombre completo y transfiere tu
-                selección directamente al planificador.
+                Las {CURRICULUM_METADATA.totalAsignaturasDocumentadas} materias de la carrera, del
+                semestre I al IX, con sus prerrequisitos escritos por nombre. Marca las que quieres
+                cursar y pásalas al planificador con un clic.
               </p>
-              <div className="pensum-landing-highlights">
-                <span>
-                  <Check size={15} /> Dos vías sincronizadas: «Todas las materias» y «Por semestre»
-                </span>
-                <span>
-                  <Check size={15} /> Prerrequisitos legibles por nombre y créditos requisito diferenciados
-                </span>
-                <span>
-                  <Check size={15} /> Selección persistente multisemestre conectada al generador
-                </span>
-              </div>
+              <ul className="pensum-landing-highlights">
+                <li>
+                  <Check size={15} /> Busca una materia o recorre la malla por semestre
+                </li>
+                <li>
+                  <Check size={15} /> Ve qué necesitas aprobar o cuántos créditos te piden
+                </li>
+                <li>
+                  <Check size={15} /> Tu selección se guarda y llega lista al generador
+                </li>
+              </ul>
               <div className="pensum-landing-ctas">
                 <button type="button" className="btn-primary" onClick={onOpenPensum}>
                   <GraduationCap size={17} /> Explorar mi pensum <ArrowRight size={16} />
@@ -282,16 +267,25 @@ function Landing({
             </div>
             <div className="pensum-landing-preview" aria-hidden="true">
               <div className="pensum-preview-pill">
-                <strong>SS301 · ESTRUCTURA DE DATOS</strong>
-                <small>Sem. III · 3 pond. · Debes haber aprobado PROGRAMACION DE COMPUTADORES I</small>
+                <span className="pensum-preview-sem">III</span>
+                <div>
+                  <strong>Estructura de datos</strong>
+                  <small>Requiere: Programación de computadores I</small>
+                </div>
               </div>
               <div className="pensum-preview-pill second">
-                <strong>SS802 · BASE DE DATOS AVANZADAS</strong>
-                <small>Sem. V · 3 pond. · Requiere 70 créditos (Academusoft)</small>
+                <span className="pensum-preview-sem">V</span>
+                <div>
+                  <strong>Bases de datos avanzadas</strong>
+                  <small>Requiere: 70 créditos aprobados</small>
+                </div>
               </div>
               <div className="pensum-preview-pill third">
-                <strong>SS702 · INTELIGENCIA ARTIFICIAL</strong>
-                <small>Sem. VII · 3 pond. · Debes haber aprobado MODELOS Y SIMULACION</small>
+                <span className="pensum-preview-sem">VII</span>
+                <div>
+                  <strong>Inteligencia artificial</strong>
+                  <small>Requiere: Modelos y simulación</small>
+                </div>
               </div>
             </div>
           </div>
@@ -299,7 +293,6 @@ function Landing({
 
         <section className="features section container" id="beneficios">
           <div className="section-intro">
-            <div className="eyebrow">MENOS ESTRÉS, MÁS CONTROL</div>
             <h2>
               Organizar el semestre
               <br />
@@ -312,8 +305,9 @@ function Landing({
           </div>
           <AnimatedContent
             className="feature-grid"
-            distance={28}
-            blur={6}
+            distance={24}
+            blur={4}
+            initialOpacity={0.25}
             duration={0.7}
             ease="expo.out"
             stagger={0.08}
@@ -395,7 +389,6 @@ function Landing({
         <section className="how section" id="como-funciona">
           <div className="container">
             <div className="section-intro centered">
-              <div className="eyebrow">ASÍ DE SENCILLO</div>
               <h2>
                 De un PDF a tu horario ideal
                 <br />
@@ -405,7 +398,8 @@ function Landing({
             </div>
             <AnimatedContent
               className="steps-grid"
-              distance={20}
+              distance={18}
+              initialOpacity={0.25}
               duration={0.6}
               ease="power3.out"
               stagger={0.1}
@@ -471,8 +465,7 @@ function Landing({
 
         <section className="faq section container" id="preguntas">
           <div className="section-intro centered">
-            <div className="eyebrow">PREGUNTAS FRECUENTES</div>
-            <h2>Todo más claro.</h2>
+            <h2>Preguntas frecuentes</h2>
           </div>
           <div className="faq-grid">
             <details>
@@ -520,6 +513,7 @@ function Landing({
             className="cta-inner"
             distance={16}
             scale={0.98}
+            initialOpacity={0.25}
             duration={0.7}
             ease="expo.out"
             stagger={0.08}
@@ -527,7 +521,6 @@ function Landing({
           >
             <div className="cta-orb" />
             <div>
-              <span>EL SIGUIENTE SEMESTRE COMIENZA AQUÍ</span>
               <h2>
                 Tu tiempo vale demasiado
                 <br />
@@ -562,108 +555,6 @@ function Landing({
         </div>
         <span>Hecho para estudiar mejor · 2026</span>
       </footer>
-    </div>
-  );
-}
-
-function HeroIllustration() {
-  return (
-    <div className="hero-visual" aria-label="Vista previa del calendario semanal">
-      <div className="hero-ambient halo-1" />
-      <div className="hero-ambient halo-2" />
-      <div className="hero-visual-stack">
-        <div className="hero-badges-row top">
-          <div className="floating-tag tag-left">
-            <span>
-              <Sparkles size={15} />
-            </span>
-            <div>
-              <strong>Sin choques</strong>
-              <small>Horario optimizado</small>
-            </div>
-          </div>
-          <div className="hero-mini-badge">
-            <Zap size={16} /> Horarios en segundos
-          </div>
-        </div>
-        <div className="mock-calendar">
-          <div className="mock-top">
-            <div className="mock-window-dots">
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="mock-title">Mi semana perfecta</div>
-            <span className="mock-term">2026 · II</span>
-          </div>
-          <div className="mock-main">
-            <div className="mock-header">
-              <div>
-                <small>CALENDARIO SEMANAL</small>
-                <h3>Tu horario de clases</h3>
-              </div>
-              <span className="mock-status">
-                <span /> Sin cruces
-              </span>
-            </div>
-            <div className="mock-grid">
-              <div className="mock-grid-head">
-                <span />
-                <span>LUN</span>
-                <span>MAR</span>
-                <span>MIÉ</span>
-                <span>JUE</span>
-                <span>VIE</span>
-              </div>
-              <div className="mock-time">
-                {['7 AM', '9 AM', '11 AM', '1 PM', '3 PM'].map(s => (
-                  <span key={s}>{s}</span>
-                ))}
-              </div>
-              <div className="mock-slots">
-                <div className="mock-stripes" />
-                <div className="mock-event m1">
-                  <strong>ESTRUCTURA DE DATOS</strong>
-                  <small>08:00 - 10:00</small>
-                </div>
-                <div className="mock-event m2">
-                  <strong>CÁLCULO INTEGRAL</strong>
-                  <small>10:00 - 12:00</small>
-                </div>
-                <div className="mock-event m3">
-                  <strong>BASES DE DATOS</strong>
-                  <small>08:00 - 10:00</small>
-                </div>
-                <div className="mock-event m4">
-                  <strong>ARQUITECTURA</strong>
-                  <small>12:00 - 14:00</small>
-                </div>
-                <div className="mock-event m5">
-                  <strong>PROGRAMACIÓN WEB</strong>
-                  <small>09:00 - 11:00</small>
-                </div>
-              </div>
-            </div>
-            <div className="mock-bottom">
-              <div>
-                <span className="mock-dot" /> 5 materias <span>·</span> 16 horas semanales
-              </div>
-              <div className="mock-avatars">✓ ✓ ✓</div>
-            </div>
-          </div>
-        </div>
-        <div className="hero-badges-row bottom">
-          <div className="floating-tag tag-right">
-            <span>
-              <CheckCircle2 size={15} />
-            </span>
-            <div>
-              <strong>Todo en orden</strong>
-              <small>Listo para matricular</small>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
